@@ -47,14 +47,35 @@ def format_nutrition_response(data: dict) -> str:
     if "error" in data:
         return f"❌ {data['error']}"
 
-    return f"""✅ Hasil Analisis!
+    foods = data.get("foods", [])
+    total = data.get("total", {})
 
-🍽️ {data.get('name', 'Makanan')}
-📊 Kalori: {data.get('calories', 0)} kkal
-🥩 Protein: {data.get('protein', 0)}g
-🍞 Karbo: {data.get('carbs', 0)}g
-🧈 Lemak: {data.get('fat', 0)}g
-📏 Porsi: {data.get('portion', '-')}"""
+    if not foods:
+        return "❌ Tidak ada makanan yang terdeteksi"
+
+    lines = ["✅ Hasil Analisis!"]
+
+    # Format each food item
+    for i, food in enumerate(foods, 1):
+        if len(foods) > 1:
+            lines.append(f"\n📍 Item {i}:")
+        lines.append(f"🍽️ {food.get('name', 'Makanan')}")
+        lines.append(f"📊 Kalori: {food.get('calories', 0)} kkal")
+        lines.append(f"🥩 Protein: {food.get('protein', 0)}g")
+        lines.append(f"🍞 Karbo: {food.get('carbs', 0)}g")
+        lines.append(f"🧈 Lemak: {food.get('fat', 0)}g")
+        lines.append(f"📏 Porsi: {food.get('portion', '-')}")
+
+    # Add total section if multiple foods
+    if len(foods) > 1:
+        lines.append("\n━━━━━━━━━━━━━━━━━━")
+        lines.append("📊 TOTAL:")
+        lines.append(f"📊 Kalori: {total.get('calories', 0)} kkal")
+        lines.append(f"🥩 Protein: {total.get('protein', 0)}g")
+        lines.append(f"🍞 Karbo: {total.get('carbs', 0)}g")
+        lines.append(f"🧈 Lemak: {total.get('fat', 0)}g")
+
+    return "\n".join(lines)
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
