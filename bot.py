@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 from config import TELEGRAM_BOT_TOKEN
-from gemini_service import analyze_food_image, analyze_food_text
+from gemini_service import analyze_food_image, analyze_food_text, parse_weight_from_text
 
 # Setup logging
 logging.basicConfig(
@@ -25,19 +25,20 @@ Kirim /help untuk bantuan lebih lanjut."""
 HELP_MESSAGE = """📖 Panduan Penggunaan
 
 🔹 Kirim Foto Makanan
-Ambil foto makanan kamu dan kirim ke bot. Saya akan menganalisis dan memberikan estimasi:
-- Nama makanan
-- Kalori (kkal)
-- Protein (gram)
-- Karbohidrat (gram)
-- Lemak (gram)
-- Porsi
+Ambil foto makanan kamu dan kirim ke bot.
+
+💡 Tips: Tambahkan caption dengan berat untuk hasil lebih akurat!
+Contoh: Kirim foto dengan caption "250 gram"
 
 🔹 Kirim Deskripsi Makanan
 Ketik nama dan porsi makanan, contoh:
 - "nasi goreng 1 piring"
-- "ayam bakar setengah ekor"
+- "ayam bakar 150 gram"
 - "es teh manis 1 gelas"
+
+⚖️ Format Berat yang Didukung:
+- 250 gram / 250g / 250 gr
+- 0.5 kg / 500 gram
 
 ❓ Ada pertanyaan? Langsung kirim pesan!"""
 
@@ -64,7 +65,12 @@ def format_nutrition_response(data: dict) -> str:
         lines.append(f"🥩 Protein: {food.get('protein', 0)}g")
         lines.append(f"🍞 Karbo: {food.get('carbs', 0)}g")
         lines.append(f"🧈 Lemak: {food.get('fat', 0)}g")
-        lines.append(f"📏 Porsi: {food.get('portion', '-')}")
+
+        # Show weight if available, otherwise show portion
+        if food.get('weight_grams'):
+            lines.append(f"⚖️ Berat: {food.get('weight_grams')} gram")
+        else:
+            lines.append(f"📏 Porsi: {food.get('portion', '-')}")
 
     # Add total section if multiple foods
     if len(foods) > 1:
@@ -74,6 +80,8 @@ def format_nutrition_response(data: dict) -> str:
         lines.append(f"🥩 Protein: {total.get('protein', 0)}g")
         lines.append(f"🍞 Karbo: {total.get('carbs', 0)}g")
         lines.append(f"🧈 Lemak: {total.get('fat', 0)}g")
+        if total.get('weight_grams'):
+            lines.append(f"⚖️ Berat: {total.get('weight_grams')} gram")
 
     return "\n".join(lines)
 
@@ -90,7 +98,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle photo messages - analyze food from image."""
-    await update.message.reply_text("🔄 Menganalisis foto makanan...")
+
+    # Get caption if exists (may contain weight)
+    caption = update.message.caption or ""
+
+    # Parse weight from caption
+    _, weight_grams = parse_weight_from_text(caption)
+
+    if weight_grams:
+        await update.message.reply_text(f"🔄 Menganalisis foto makanan ({weight_grams} gram)...")
+    else:
+        await update.message.reply_text("🔄 Menganalisis foto makanan...")
 
     try:
         # Get the largest photo
@@ -100,8 +118,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Download photo as bytes
         photo_bytes = await file.download_as_bytearray()
 
-        # Analyze with Gemini
-        result = await analyze_food_image(bytes(photo_bytes))
+        # Pass weight to analyzer
+        result = await analyze_food_image(bytes(photo_bytes), weight_grams=weight_grams)
 
         # Send response
         response = format_nutrition_response(result)
@@ -120,11 +138,21 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if text.startswith("/"):
         return
 
-    await update.message.reply_text("🔄 Menganalisis makanan...")
+    # Parse weight from text
+    food_description, weight_grams = parse_weight_from_text(text)
+
+    # If only weight was provided (empty description), use original text
+    if not food_description.strip():
+        food_description = text
+
+    if weight_grams:
+        await update.message.reply_text(f"🔄 Menganalisis makanan ({weight_grams} gram)...")
+    else:
+        await update.message.reply_text("🔄 Menganalisis makanan...")
 
     try:
-        # Analyze with Gemini
-        result = await analyze_food_text(text)
+        # Pass weight to analyzer
+        result = await analyze_food_text(food_description, weight_grams=weight_grams)
 
         # Send response
         response = format_nutrition_response(result)

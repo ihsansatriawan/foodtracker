@@ -1,4 +1,5 @@
 import json
+import re
 import google.generativeai as genai
 from config import GEMINI_API_KEY
 
@@ -39,6 +40,78 @@ Jika hanya ada 1 makanan, tetap gunakan format array dengan 1 item.
 Jika bukan makanan/minuman, return:
 {"error": "Tidak dapat mengenali makanan"}"""
 
+PROMPT_WITH_WEIGHT = """Kamu adalah ahli nutrisi Indonesia. Analisis makanan dalam gambar.
+PENTING: User sudah menimbang makanan ini dengan berat {weight} gram.
+Hitung kandungan nutrisi berdasarkan berat {weight} gram tersebut.
+
+Berikan response dalam format JSON ONLY (tanpa markdown):
+{{
+  "foods": [
+    {{
+      "name": "nama makanan dalam Bahasa Indonesia",
+      "calories": angka dalam kkal untuk {weight} gram,
+      "protein": angka dalam gram,
+      "carbs": angka dalam gram,
+      "fat": angka dalam gram,
+      "weight_grams": {weight}
+    }}
+  ],
+  "total": {{
+    "calories": total kkal,
+    "protein": total gram,
+    "carbs": total gram,
+    "fat": total gram,
+    "weight_grams": {weight}
+  }}
+}}
+
+Jika bukan makanan/minuman, return:
+{{"error": "Tidak dapat mengenali makanan"}}"""
+
+
+def parse_weight_from_text(text: str) -> tuple[str, int | None]:
+    """
+    Parse weight (gram) from text input.
+    Returns: (cleaned_text, weight_in_grams)
+
+    Examples:
+        "250 gram" -> ("", 250)
+        "250g" -> ("", 250)
+        "nasi goreng 200 gram" -> ("nasi goreng", 200)
+        "0.5 kg" -> ("", 500)
+        "nasi goreng 1 piring" -> ("nasi goreng 1 piring", None)
+    """
+    if not text:
+        return (text, None)
+
+    patterns = [
+        r'(\d+(?:\.\d+)?)\s*(?:gram|gr|g)\b',  # 250 gram, 250g, 250 gr
+        r'(\d+(?:\.\d+)?)\s*(?:kilogram|kg)\b', # 0.5 kg, 1 kilogram
+    ]
+
+    weight = None
+    cleaned_text = text
+
+    # Match gram patterns
+    match = re.search(patterns[0], text, re.IGNORECASE)
+    if match:
+        weight = int(float(match.group(1)))
+        cleaned_text = re.sub(patterns[0], '', text, flags=re.IGNORECASE).strip()
+
+    # Match kg patterns (convert to gram)
+    if weight is None:
+        match = re.search(patterns[1], text, re.IGNORECASE)
+        if match:
+            weight = int(float(match.group(1)) * 1000)
+            cleaned_text = re.sub(patterns[1], '', text, flags=re.IGNORECASE).strip()
+
+    # Validate weight (must be positive and reasonable)
+    if weight is not None and (weight <= 0 or weight > 10000):
+        weight = None
+        cleaned_text = text
+
+    return (cleaned_text, weight)
+
 
 def normalize_response(data: dict) -> dict:
     """
@@ -66,20 +139,31 @@ def normalize_response(data: dict) -> dict:
     return {"error": "Format respons tidak valid"}
 
 
-async def analyze_food_image(image_bytes: bytes) -> dict:
+async def analyze_food_image(image_bytes: bytes, weight_grams: int | None = None) -> dict:
     """
     Analyze food from image using Gemini Vision.
+
+    Args:
+        image_bytes: Raw image data
+        weight_grams: Optional weight in grams for precise calculation
+
     Returns: {foods: [...], total: {...}} or {error: "..."}
     """
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
+
+        # Use weight-specific prompt if weight is provided
+        if weight_grams:
+            prompt = PROMPT_WITH_WEIGHT.format(weight=weight_grams)
+        else:
+            prompt = PROMPT_TEMPLATE
 
         image_part = {
             "mime_type": "image/jpeg",
             "data": image_bytes
         }
 
-        response = model.generate_content([PROMPT_TEMPLATE, image_part])
+        response = model.generate_content([prompt, image_part])
         result_text = response.text.strip()
 
         # Clean up response if wrapped in markdown code blocks
@@ -96,15 +180,23 @@ async def analyze_food_image(image_bytes: bytes) -> dict:
         return {"error": f"Terjadi kesalahan: {str(e)}"}
 
 
-async def analyze_food_text(food_description: str) -> dict:
+async def analyze_food_text(food_description: str, weight_grams: int | None = None) -> dict:
     """
     Analyze food from text description using Gemini.
+
+    Args:
+        food_description: Food description text
+        weight_grams: Optional weight in grams for precise calculation
+
     Returns: {foods: [...], total: {...}} or {error: "..."}
     """
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
 
-        prompt = f"{PROMPT_TEMPLATE}\n\nMakanan: {food_description}"
+        if weight_grams:
+            prompt = f"{PROMPT_WITH_WEIGHT.format(weight=weight_grams)}\n\nMakanan: {food_description}"
+        else:
+            prompt = f"{PROMPT_TEMPLATE}\n\nMakanan: {food_description}"
 
         response = model.generate_content(prompt)
         result_text = response.text.strip()
