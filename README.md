@@ -5,7 +5,9 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 ## Features
 
 - **Photo Analysis**: Send a food photo and get instant nutritional breakdown
+- **Weight-Based Calculation**: Specify food weight in grams for precise nutrition estimates
 - **Text Analysis**: Describe your food (e.g., "nasi goreng 1 piring") to get estimates
+- **Multi-Food Detection**: Automatically detects and analyzes multiple food items in a single image
 - **Nutritional Data**: Returns calories, protein, carbohydrates, and fat content
 - **Indonesian Language**: Bot interface optimized for Indonesian users
 
@@ -66,8 +68,24 @@ python bot.py
 | `/help` | Detailed usage guide |
 
 **Interaction:**
-- Send a photo of your food to get nutritional analysis
-- Send a text description (e.g., "ayam bakar setengah ekor") to get estimates
+
+1. **Photo Analysis (with weight):**
+   - Send a food photo with caption `250 gram` or `0.5 kg`
+   - Bot calculates nutrition based on the specified weight
+   - Displays: `⚖️ Berat: 250 gram`
+
+2. **Photo Analysis (estimation):**
+   - Send a food photo without caption
+   - Bot estimates portion size and nutrition
+   - Displays: `📏 Porsi: ~1 piring`
+
+3. **Text Analysis:**
+   - With weight: `"nasi goreng 200 gram"` or `"ayam bakar 150g"`
+   - Without weight: `"nasi goreng 1 piring"` or `"ayam bakar setengah ekor"`
+
+**Supported Weight Formats:**
+- Grams: `250 gram`, `250g`, `250 gr`
+- Kilograms: `0.5 kg`, `1 kilogram` (auto-converts to grams)
 
 ## Project Structure
 
