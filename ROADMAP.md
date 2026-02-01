@@ -59,6 +59,7 @@ Development roadmap for the Food Tracker Telegram bot.
 | Karbo | Carbs (gram) |
 | Lemak | Fat (gram) |
 | Porsi/Berat | Portion or weight |
+| Image URL | Telegram file URL for manual validation |
 
 ---
 

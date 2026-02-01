@@ -26,7 +26,8 @@ HEADERS = [
     "Protein",      # Protein (gram)
     "Karbo",        # Carbs (gram)
     "Lemak",        # Fat (gram)
-    "Porsi/Berat"   # Portion or weight
+    "Porsi/Berat",  # Portion or weight
+    "Image URL"     # Telegram file URL for validation
 ]
 
 # Cache for the sheets client
@@ -90,7 +91,7 @@ def get_worksheet() -> Optional[gspread.Worksheet]:
         return None
 
 
-def log_food_entry(user_id: int, food_data: dict) -> bool:
+def log_food_entry(user_id: int, food_data: dict, image_url: str = "") -> bool:
     """
     Log a food entry to Google Sheets.
 
@@ -98,6 +99,7 @@ def log_food_entry(user_id: int, food_data: dict) -> bool:
         user_id: Telegram user ID
         food_data: Dictionary containing food nutrition data
             Expected keys: name, calories, protein, carbs, fat, weight_grams/portion
+        image_url: Optional URL to the food image for manual validation
 
     Returns:
         True if logged successfully, False otherwise
@@ -125,7 +127,8 @@ def log_food_entry(user_id: int, food_data: dict) -> bool:
         food_data.get('protein', 0),
         food_data.get('carbs', 0),
         food_data.get('fat', 0),
-        portion
+        portion,
+        image_url
     ]
 
     try:
@@ -137,20 +140,21 @@ def log_food_entry(user_id: int, food_data: dict) -> bool:
         return False
 
 
-def log_multiple_foods(user_id: int, foods: list) -> int:
+def log_multiple_foods(user_id: int, foods: list, image_url: str = "") -> int:
     """
     Log multiple food entries at once.
 
     Args:
         user_id: Telegram user ID
         foods: List of food dictionaries
+        image_url: Optional URL to the food image for manual validation
 
     Returns:
         Number of entries logged successfully
     """
     count = 0
     for food in foods:
-        if log_food_entry(user_id, food):
+        if log_food_entry(user_id, food, image_url):
             count += 1
     return count
 

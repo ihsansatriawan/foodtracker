@@ -130,6 +130,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         photo = update.message.photo[-1]
         file = await context.bot.get_file(photo.file_id)
 
+        # Get image URL for validation (Telegram file URL)
+        image_url = file.file_path if file.file_path else ""
+
         # Download photo as bytes
         photo_bytes = await file.download_as_bytearray()
 
@@ -145,7 +148,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             user_id = update.effective_user.id
             foods = result.get("foods", [])
             if foods:
-                logged_count = log_multiple_foods(user_id, foods)
+                logged_count = log_multiple_foods(user_id, foods, image_url)
                 if logged_count > 0:
                     logged = True
 
