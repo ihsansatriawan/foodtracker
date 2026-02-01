@@ -45,3 +45,10 @@ Three-file modular design:
 - python-telegram-bot 21.0
 - google-generativeai 0.8.0 (Gemini 2.0 Flash model)
 - python-dotenv
+
+## Documentation
+
+- **ROADMAP.md** - Development roadmap with completed and planned features
+  - Update when implementing new features (mark as ✅ completed)
+  - Update when adding new planned features
+  - Keep priority levels current

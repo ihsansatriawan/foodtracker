@@ -1,22 +1,45 @@
-# Food Tracker Bot
+# Food Tracker Bot 🍽️
 
-A Telegram bot that analyzes food photos and text descriptions to provide nutritional estimates using Google's Gemini AI.
+A Telegram bot that analyzes food photos and text descriptions to provide nutritional estimates using Google's Gemini AI. Interface fully localized in Indonesian (Bahasa Indonesia).
 
-## Features
+## ✅ Current Capabilities
 
-- **Photo Analysis**: Send a food photo and get instant nutritional breakdown
-- **Weight-Based Calculation**: Specify food weight in grams for precise nutrition estimates
-- **Text Analysis**: Describe your food (e.g., "nasi goreng 1 piring") to get estimates
-- **Multi-Food Detection**: Automatically detects and analyzes multiple food items in a single image
-- **Nutritional Data**: Returns calories, protein, carbohydrates, and fat content
-- **Indonesian Language**: Bot interface optimized for Indonesian users
+### Core Features (Implemented)
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Photo Analysis** | ✅ Done | Send a food photo and get instant nutritional breakdown |
+| **Text Analysis** | ✅ Done | Describe your food (e.g., "nasi goreng 1 piring") to get estimates |
+| **Weight-Based Calculation** | ✅ Done | Specify food weight in grams for precise nutrition estimates |
+| **Multi-Food Detection** | ✅ Done | Automatically detects and analyzes multiple food items in a single image |
+| **Indonesian Language** | ✅ Done | Bot interface fully optimized for Indonesian users |
+
+### Supported Input Formats
+
+**Photo Input:**
+- Send food photo without caption → AI estimates portion and nutrition
+- Send food photo with weight caption → Precise nutrition calculation
+  - Example: `250 gram`, `250g`, `0.5 kg`
+
+**Text Input:**
+- With weight: `"nasi goreng 200 gram"`, `"ayam bakar 150g"`
+- Without weight: `"nasi goreng 1 piring"`, `"ayam bakar setengah ekor"`
+
+**Nutritional Data Returned:**
+- 📊 Calories (kkal)
+- 🥩 Protein (gram)
+- 🍞 Carbohydrates (gram)
+- 🧈 Fat (gram)
+- ⚖️ Weight / 📏 Portion
 
 ## Tech Stack
 
-- **Python 3.10+**
-- **python-telegram-bot** - Telegram Bot API wrapper
-- **Google Generative AI (Gemini 2.0 Flash)** - Food image and text analysis
-- **python-dotenv** - Environment variable management
+| Component | Technology | Notes |
+|-----------|------------|-------|
+| Runtime | Python 3.10+ | |
+| Bot Framework | python-telegram-bot v21 | Async Telegram API wrapper |
+| AI Model | Google Gemini 2.0 Flash | Vision & text analysis |
+| Config | python-dotenv | Environment variable management |
 
 ## Prerequisites
 
@@ -49,7 +72,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
    ```
 
    Edit `.env` and add your credentials:
-   ```
+   ```env
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token
    GEMINI_API_KEY=your_gemini_api_key
    ```
@@ -67,7 +90,7 @@ python bot.py
 | `/start` | Welcome message and usage instructions |
 | `/help` | Detailed usage guide |
 
-**Interaction:**
+**Interaction Examples:**
 
 1. **Photo Analysis (with weight):**
    - Send a food photo with caption `250 gram` or `0.5 kg`
@@ -83,10 +106,6 @@ python bot.py
    - With weight: `"nasi goreng 200 gram"` or `"ayam bakar 150g"`
    - Without weight: `"nasi goreng 1 piring"` or `"ayam bakar setengah ekor"`
 
-**Supported Weight Formats:**
-- Grams: `250 gram`, `250g`, `250 gr`
-- Kilograms: `0.5 kg`, `1 kilogram` (auto-converts to grams)
-
 ## Project Structure
 
 ```
@@ -97,7 +116,43 @@ food_tracker/
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Environment template
 ├── .gitignore          # Git ignore rules
-└── README.md           # Documentation
+├── CLAUDE.md           # AI assistant guidelines
+├── README.md           # This file
+└── ROADMAP.md          # Development roadmap
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Telegram User                            │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         bot.py                                  │
+│  • /start, /help commands                                       │
+│  • Photo & text message handlers                                │
+│  • Weight parsing from caption/text                             │
+│  • Emoji-rich Indonesian response formatting                    │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     gemini_service.py                           │
+│  • analyze_food_image(image_bytes, weight_grams)                │
+│  • analyze_food_text(description, weight_grams)                 │
+│  • parse_weight_from_text(text)                                 │
+│  • Response normalization: {foods: [...], total: {...}}         │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Google Gemini 2.0 Flash API                   │
+│  • Vision-based food recognition                                 │
+│  • Nutritional estimation                                        │
+│  • Indonesian language understanding                             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Development
@@ -118,14 +173,10 @@ python bot.py
 
 ## Roadmap
 
-- [ ] Daily calorie tracking and history
-- [ ] User meal logging with database storage
-- [ ] Daily/weekly nutrition reports
-- [ ] Calorie goal setting and reminders
-- [ ] Support for multiple languages
-- [ ] Barcode scanning for packaged foods
-- [ ] Integration with fitness apps
-- [ ] Group chat support for family tracking
+See [ROADMAP.md](ROADMAP.md) for the full development roadmap including:
+- ✅ Completed MVP features
+- 🔜 Planned features (Google Sheets, goal tracking, etc.)
+- 🔧 Technical improvements
 
 ## Contributing
 
