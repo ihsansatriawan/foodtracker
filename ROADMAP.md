@@ -34,25 +34,25 @@ Development roadmap for the Food Tracker Telegram bot.
 - [x] Supported formats: `gram`, `g`, `gr`, `kg`, `kilogram`
 - [x] Precise nutrition calculation based on actual weight
 
----
-
-## 🔜 Planned Features
-
-### Phase 4: Data Persistence 📊
-*Priority: High - Foundation for tracking*
-
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| Google Sheets Integration | 🔴 High | Save entries with timestamp |
-| `/today` Command | 🔴 High | Today's calorie summary |
-| `/history` Command | 🟡 Medium | Recent food entries |
-| `/undo` Command | 🟡 Medium | Delete last entry |
+### Phase 4: Data Persistence ✅
+- [x] `sheets_service.py` - Google Sheets integration
+  - [x] Service account authentication
+  - [x] Auto-create "Food Log" worksheet with headers
+  - [x] `log_food_entry()` - Save entries with timestamp
+  - [x] `get_today_entries()` - Filter by date and user
+  - [x] `get_recent_entries()` - Paginated history
+  - [x] `delete_last_entry()` - Undo support
+- [x] `/today` command - Daily calorie summary
+- [x] `/history` command - Recent food entries (last 10)
+- [x] `/undo` command - Delete last entry
+- [x] Auto-logging after successful analysis
 
 **Google Sheets Schema:**
 | Column | Description |
 |--------|-------------|
 | Tanggal | Date (YYYY-MM-DD) |
 | Waktu | Time (HH:MM) |
+| User ID | Telegram user ID |
 | Nama Makanan | Food name |
 | Kalori | Calories (kkal) |
 | Protein | Protein (gram) |
@@ -61,6 +61,8 @@ Development roadmap for the Food Tracker Telegram bot.
 | Porsi/Berat | Portion or weight |
 
 ---
+
+## 🔜 Planned Features
 
 ### Phase 5: Goal Tracking 🎯
 *Priority: Medium*

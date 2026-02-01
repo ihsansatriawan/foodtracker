@@ -13,6 +13,10 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | **Weight-Based Calculation** | ✅ Done | Specify food weight in grams for precise nutrition estimates |
 | **Multi-Food Detection** | ✅ Done | Automatically detects and analyzes multiple food items in a single image |
 | **Indonesian Language** | ✅ Done | Bot interface fully optimized for Indonesian users |
+| **Food Logging** | ✅ Done | Auto-save entries to Google Sheets with timestamp |
+| **Daily Summary** | ✅ Done | `/today` command shows today's calorie totals |
+| **History** | ✅ Done | `/history` command shows recent food entries |
+| **Undo** | ✅ Done | `/undo` command deletes last entry |
 
 ### Supported Input Formats
 
@@ -39,6 +43,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | Runtime | Python 3.10+ | |
 | Bot Framework | python-telegram-bot v21 | Async Telegram API wrapper |
 | AI Model | Google Gemini 2.0 Flash | Vision & text analysis |
+| Data Storage | Google Sheets | Food logging via gspread |
 | Config | python-dotenv | Environment variable management |
 
 ## Prerequisites
@@ -46,6 +51,11 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 - Python 3.10 or higher
 - Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
 - Google Gemini API Key (from [Google AI Studio](https://aistudio.google.com/apikey))
+- Google Sheets API credentials (optional, for food logging)
+  - Create a Service Account in [Google Cloud Console](https://console.cloud.google.com/)
+  - Enable Google Sheets API
+  - Download `credentials.json`
+  - Share your spreadsheet with the service account email
 
 ## Installation
 
@@ -75,6 +85,10 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
    ```env
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token
    GEMINI_API_KEY=your_gemini_api_key
+
+   # Optional: Google Sheets for food logging
+   GOOGLE_SHEETS_ID=your_spreadsheet_id
+   GOOGLE_CREDENTIALS_FILE=credentials.json
    ```
 
 ## Usage
@@ -89,6 +103,9 @@ python bot.py
 |---------|-------------|
 | `/start` | Welcome message and usage instructions |
 | `/help` | Detailed usage guide |
+| `/today` | Show today's food log and calorie summary |
+| `/history` | Show last 10 food entries |
+| `/undo` | Delete the last logged entry |
 
 **Interaction Examples:**
 
@@ -113,6 +130,7 @@ food_tracker/
 ├── bot.py              # Main bot application and handlers
 ├── config.py           # Environment configuration
 ├── gemini_service.py   # Gemini AI integration
+├── sheets_service.py   # Google Sheets integration (food logging)
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Environment template
 ├── .gitignore          # Git ignore rules
@@ -131,28 +149,27 @@ food_tracker/
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         bot.py                                  │
-│  • /start, /help commands                                       │
+│  • /start, /help, /today, /history, /undo commands              │
 │  • Photo & text message handlers                                │
 │  • Weight parsing from caption/text                             │
 │  • Emoji-rich Indonesian response formatting                    │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     gemini_service.py                           │
-│  • analyze_food_image(image_bytes, weight_grams)                │
-│  • analyze_food_text(description, weight_grams)                 │
-│  • parse_weight_from_text(text)                                 │
-│  • Response normalization: {foods: [...], total: {...}}         │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Google Gemini 2.0 Flash API                   │
-│  • Vision-based food recognition                                 │
-│  • Nutritional estimation                                        │
-│  • Indonesian language understanding                             │
-└─────────────────────────────────────────────────────────────────┘
+└───────────────┬─────────────────────────────────┬───────────────┘
+                │                                 │
+                ▼                                 ▼
+┌───────────────────────────────┐ ┌───────────────────────────────┐
+│       gemini_service.py       │ │      sheets_service.py        │
+│  • analyze_food_image()       │ │  • log_food_entry()           │
+│  • analyze_food_text()        │ │  • get_today_entries()        │
+│  • parse_weight_from_text()   │ │  • get_recent_entries()       │
+│  • Response normalization     │ │  • delete_last_entry()        │
+└───────────────┬───────────────┘ └───────────────┬───────────────┘
+                │                                 │
+                ▼                                 ▼
+┌───────────────────────────────┐ ┌───────────────────────────────┐
+│  Google Gemini 2.0 Flash API  │ │      Google Sheets API        │
+│  • Vision-based recognition   │ │  • Food log persistence       │
+│  • Nutritional estimation     │ │  • Per-user data storage      │
+└───────────────────────────────┘ └───────────────────────────────┘
 ```
 
 ## Development
