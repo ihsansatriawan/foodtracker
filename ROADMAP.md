@@ -42,6 +42,10 @@ Development roadmap for the Food Tracker Telegram bot.
   - [x] `get_today_entries()` - Filter by date and user
   - [x] `get_recent_entries()` - Paginated history
   - [x] `delete_last_entry()` - Undo support
+- [x] `imagekit_service.py` - ImageKit integration
+  - [x] `upload_food_image()` - Upload photos for permanent storage
+  - [x] Automatic filename with timestamp and user ID
+  - [x] Permanent URLs stored in Google Sheets
 - [x] `/today` command - Daily calorie summary
 - [x] `/history` command - Recent food entries (last 10)
 - [x] `/undo` command - Delete last entry
@@ -59,7 +63,7 @@ Development roadmap for the Food Tracker Telegram bot.
 | Karbo | Carbs (gram) |
 | Lemak | Fat (gram) |
 | Porsi/Berat | Portion or weight |
-| Image URL | Telegram file URL for manual validation |
+| Image URL | ImageKit permanent URL for manual validation |
 
 ---
 
@@ -147,4 +151,4 @@ Development roadmap for the Food Tracker Telegram bot.
 
 ---
 
-*Last updated: February 2025*
+*Last updated: February 2026*

@@ -14,6 +14,7 @@ from sheets_service import (
     delete_last_entry,
     is_sheets_configured
 )
+from imagekit_service import upload_food_image, is_imagekit_configured
 
 # Setup logging
 logging.basicConfig(
@@ -130,14 +131,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         photo = update.message.photo[-1]
         file = await context.bot.get_file(photo.file_id)
 
-        # Get image URL for validation (Telegram file URL)
-        image_url = file.file_path if file.file_path else ""
-
         # Download photo as bytes
         photo_bytes = await file.download_as_bytearray()
+        photo_bytes_raw = bytes(photo_bytes)
 
         # Pass weight to analyzer
-        result = await analyze_food_image(bytes(photo_bytes), weight_grams=weight_grams)
+        result = await analyze_food_image(photo_bytes_raw, weight_grams=weight_grams)
 
         # Send response
         response = format_nutrition_response(result)
@@ -148,6 +147,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             user_id = update.effective_user.id
             foods = result.get("foods", [])
             if foods:
+                # Upload image to ImageKit for permanent storage
+                image_url = ""
+                if is_imagekit_configured():
+                    food_name = foods[0].get('name', 'food') if foods else 'food'
+                    image_url = upload_food_image(photo_bytes_raw, user_id, food_name) or ""
+
                 logged_count = log_multiple_foods(user_id, foods, image_url)
                 if logged_count > 0:
                     logged = True

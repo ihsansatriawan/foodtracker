@@ -14,6 +14,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | **Multi-Food Detection** | ✅ Done | Automatically detects and analyzes multiple food items in a single image |
 | **Indonesian Language** | ✅ Done | Bot interface fully optimized for Indonesian users |
 | **Food Logging** | ✅ Done | Auto-save entries to Google Sheets with timestamp |
+| **Image Storage** | ✅ Done | Food photos stored permanently on ImageKit for validation |
 | **Daily Summary** | ✅ Done | `/today` command shows today's calorie totals |
 | **History** | ✅ Done | `/history` command shows recent food entries |
 | **Undo** | ✅ Done | `/undo` command deletes last entry |
@@ -44,6 +45,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | Bot Framework | python-telegram-bot v21 | Async Telegram API wrapper |
 | AI Model | Google Gemini 2.0 Flash | Vision & text analysis |
 | Data Storage | Google Sheets | Food logging via gspread |
+| Image Storage | ImageKit | Permanent image hosting for validation |
 | Config | python-dotenv | Environment variable management |
 
 ## Prerequisites
@@ -56,6 +58,9 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
   - Enable Google Sheets API
   - Download `credentials.json`
   - Share your spreadsheet with the service account email
+- ImageKit account (optional, for image storage)
+  - Sign up at [ImageKit.io](https://imagekit.io/)
+  - Get Private Key and URL Endpoint from dashboard
 
 ## Installation
 
@@ -89,6 +94,10 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
    # Optional: Google Sheets for food logging
    GOOGLE_SHEETS_ID=your_spreadsheet_id
    GOOGLE_CREDENTIALS_FILE=credentials.json
+
+   # Optional: ImageKit for image storage
+   IMAGEKIT_PRIVATE_KEY=private_xxxxx
+   IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_id
    ```
 
 ## Usage
@@ -131,6 +140,7 @@ food_tracker/
 ├── config.py           # Environment configuration
 ├── gemini_service.py   # Gemini AI integration
 ├── sheets_service.py   # Google Sheets integration (food logging)
+├── imagekit_service.py # ImageKit integration (image storage)
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Environment template
 ├── .gitignore          # Git ignore rules
@@ -153,23 +163,22 @@ food_tracker/
 │  • Photo & text message handlers                                │
 │  • Weight parsing from caption/text                             │
 │  • Emoji-rich Indonesian response formatting                    │
-└───────────────┬─────────────────────────────────┬───────────────┘
-                │                                 │
-                ▼                                 ▼
-┌───────────────────────────────┐ ┌───────────────────────────────┐
-│       gemini_service.py       │ │      sheets_service.py        │
-│  • analyze_food_image()       │ │  • log_food_entry()           │
-│  • analyze_food_text()        │ │  • get_today_entries()        │
-│  • parse_weight_from_text()   │ │  • get_recent_entries()       │
-│  • Response normalization     │ │  • delete_last_entry()        │
-└───────────────┬───────────────┘ └───────────────┬───────────────┘
-                │                                 │
-                ▼                                 ▼
-┌───────────────────────────────┐ ┌───────────────────────────────┐
-│  Google Gemini 2.0 Flash API  │ │      Google Sheets API        │
-│  • Vision-based recognition   │ │  • Food log persistence       │
-│  • Nutritional estimation     │ │  • Per-user data storage      │
-└───────────────────────────────┘ └───────────────────────────────┘
+└───────────┬─────────────────────┬─────────────────────┬─────────┘
+            │                     │                     │
+            ▼                     ▼                     ▼
+┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
+│ gemini_service.py │ │ sheets_service.py │ │imagekit_service.py│
+│ • analyze_image() │ │ • log_food_entry()│ │ • upload_image()  │
+│ • analyze_text()  │ │ • get_today()     │ │ • Permanent URLs  │
+│ • parse_weight()  │ │ • get_recent()    │ │                   │
+└─────────┬─────────┘ └─────────┬─────────┘ └─────────┬─────────┘
+          │                     │                     │
+          ▼                     ▼                     ▼
+┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
+│  Gemini 2.0 Flash │ │  Google Sheets    │ │     ImageKit      │
+│  • Vision AI      │ │  • Food logging   │ │  • Image storage  │
+│  • Nutrition est. │ │  • User data      │ │  • CDN delivery   │
+└───────────────────┘ └───────────────────┘ └───────────────────┘
 ```
 
 ## Development
@@ -211,3 +220,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
 - [Google Generative AI](https://ai.google.dev/)
+- [ImageKit](https://imagekit.io/) - Image storage and CDN
