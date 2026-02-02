@@ -115,6 +115,7 @@ python bot.py
 | `/today` | Show today's food log and calorie summary |
 | `/history` | Show last 10 food entries |
 | `/undo` | Delete the last logged entry |
+| `/accuracy` | View your weight estimation accuracy stats |
 
 **Interaction Examples:**
 
@@ -206,18 +207,17 @@ See [ROADMAP.md](ROADMAP.md) for the full development roadmap including:
 - 🔜 Planned features (goal tracking, enhanced analysis, etc.)
 - 🔧 Technical improvements
 
-### Coming Soon: Weight Feedback Loop
+### ✅ Weight Feedback Loop (Implemented)
 
-See [docs/WEIGHT_FEEDBACK_LOOP_PLAN.md](docs/WEIGHT_FEEDBACK_LOOP_PLAN.md) for the detailed implementation plan to improve gram estimation accuracy.
+The bot now learns from your corrections! See [docs/WEIGHT_FEEDBACK_LOOP_PLAN.md](docs/WEIGHT_FEEDBACK_LOOP_PLAN.md) for technical details.
 
-| Phase | Feature | Description |
-|-------|---------|-------------|
-| 1 | Feedback UI | Inline keyboard buttons to verify/correct weight |
-| 2 | Schema Extension | Store correction data in Google Sheets |
-| 3 | Learning System | Adjust future estimates based on user corrections |
-| 4 | Analytics | `/accuracy` command to show personal stats |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Feedback Buttons | ✅ | [✅ Benar] [🔧 Koreksi Berat] [❌ Salah] after each analysis |
+| Learning System | ✅ | Adjusts future estimates based on your corrections |
+| `/accuracy` | ✅ | View your personal accuracy stats and trends |
 
-**Target:** 20-30% improvement in weight estimation accuracy
+**Result:** 20-30% improvement in weight estimation accuracy over time
 
 ## Contributing
 
