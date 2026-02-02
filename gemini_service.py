@@ -213,3 +213,118 @@ async def analyze_food_text(food_description: str, weight_grams: int | None = No
         return {"error": "Tidak dapat memproses respons dari AI"}
     except Exception as e:
         return {"error": f"Terjadi kesalahan: {str(e)}"}
+
+
+def apply_correction_ratio(result: dict, ratio: float) -> dict:
+    """
+    Apply correction ratio ke semua estimasi berat dan nutrisi.
+
+    Args:
+        result: Nutrition analysis result
+        ratio: Correction ratio to apply
+
+    Returns:
+        Adjusted result with correction ratio applied
+    """
+    adjusted_result = result.copy()
+
+    # Adjust each food item
+    for food in adjusted_result.get("foods", []):
+        if "weight_grams" in food:
+            original = food["weight_grams"]
+            adjusted = int(original * ratio)
+            food["weight_grams"] = adjusted
+            food["_original_estimate"] = original
+
+        # Adjust nutrition proportionally
+        for nutrient in ["calories", "protein", "carbs", "fat"]:
+            if nutrient in food:
+                food[nutrient] = int(food[nutrient] * ratio)
+
+    # Update totals
+    if "total" in adjusted_result:
+        for key in adjusted_result["total"]:
+            if isinstance(adjusted_result["total"][key], (int, float)):
+                adjusted_result["total"][key] = int(adjusted_result["total"][key] * ratio)
+
+    return adjusted_result
+
+
+async def analyze_food_image_with_learning(image_bytes: bytes, weight_grams: int = None,
+                                           user_id: int = None) -> dict:
+    """
+    Analyze dengan adjustment berdasarkan historical corrections.
+
+    Args:
+        image_bytes: Raw image data
+        weight_grams: Optional weight in grams for precise calculation
+        user_id: Optional user ID to apply personalized corrections
+
+    Returns: {foods: [...], total: {...}} with optional adjustment metadata
+    """
+    # Get base analysis from Gemini
+    result = await analyze_food_image(image_bytes, weight_grams)
+
+    if "error" in result:
+        return result
+
+    if weight_grams:
+        # User sudah specify weight, tidak perlu adjustment
+        return result
+
+    if user_id:
+        # Import here to avoid circular dependency
+        from sheets_service import get_average_correction_ratio
+
+        # Apply user-specific correction ratio
+        correction_ratio = get_average_correction_ratio(user_id)
+
+        if correction_ratio != 1.0 and 0.8 <= correction_ratio <= 1.3:
+            # Only apply if ratio is reasonable (not too extreme)
+            result = apply_correction_ratio(result, correction_ratio)
+            result["_adjustment_applied"] = {
+                "ratio": correction_ratio,
+                "source": "user_history"
+            }
+
+    return result
+
+
+async def analyze_food_text_with_learning(food_description: str, weight_grams: int = None,
+                                          user_id: int = None) -> dict:
+    """
+    Analyze text dengan adjustment berdasarkan historical corrections.
+
+    Args:
+        food_description: Food description text
+        weight_grams: Optional weight in grams for precise calculation
+        user_id: Optional user ID to apply personalized corrections
+
+    Returns: {foods: [...], total: {...}} with optional adjustment metadata
+    """
+    # Get base analysis from Gemini
+    result = await analyze_food_text(food_description, weight_grams)
+
+    if "error" in result:
+        return result
+
+    if weight_grams:
+        # User sudah specify weight, tidak perlu adjustment
+        return result
+
+    if user_id:
+        # Import here to avoid circular dependency
+        from sheets_service import get_average_correction_ratio
+
+        # Apply user-specific correction ratio
+        correction_ratio = get_average_correction_ratio(user_id)
+
+        if correction_ratio != 1.0 and 0.8 <= correction_ratio <= 1.3:
+            # Only apply if ratio is reasonable (not too extreme)
+            result = apply_correction_ratio(result, correction_ratio)
+            result["_adjustment_applied"] = {
+                "ratio": correction_ratio,
+                "source": "user_history"
+            }
+
+    return result

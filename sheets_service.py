@@ -2,6 +2,8 @@ import logging
 from datetime import datetime
 from typing import Optional
 import os
+import uuid
+import re
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -27,7 +29,14 @@ HEADERS = [
     "Karbo",        # Carbs (gram)
     "Lemak",        # Fat (gram)
     "Porsi/Berat",  # Portion or weight
-    "Image URL"     # Telegram file URL for validation
+    "Image URL",    # Telegram file URL for validation
+    # New feedback columns
+    "Entry ID",           # UUID untuk track individual entries
+    "AI Estimate (g)",    # Berat estimasi dari AI
+    "User Verified",      # TRUE jika user confirm benar
+    "Actual Weight (g)",  # Berat sebenarnya dari user
+    "Correction Ratio",   # actual/estimate (untuk learning)
+    "Feedback Date"       # Kapan feedback diberikan
 ]
 
 # Cache for the sheets client
@@ -91,9 +100,27 @@ def get_worksheet() -> Optional[gspread.Worksheet]:
         return None
 
 
+def generate_entry_id() -> str:
+    """Generate unique entry ID."""
+    return str(uuid.uuid4())[:8]
+
+
+def extract_weight_from_portion(portion: str) -> Optional[int]:
+    """Extract weight in grams from portion string."""
+    if not portion:
+        return None
+
+    # Match patterns like "150 gram", "200g", etc.
+    match = re.search(r'(\d+)\s*(?:gram|g)\b', portion, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+
+    return None
+
+
 def log_food_entry(user_id: int, food_data: dict, image_url: str = "") -> bool:
     """
-    Log a food entry to Google Sheets.
+    Log a food entry to Google Sheets (legacy function for backward compatibility).
 
     Args:
         user_id: Telegram user ID
@@ -104,9 +131,27 @@ def log_food_entry(user_id: int, food_data: dict, image_url: str = "") -> bool:
     Returns:
         True if logged successfully, False otherwise
     """
+    entry_id = log_food_with_tracking(user_id, food_data, image_url)
+    return entry_id is not None
+
+
+def log_food_with_tracking(user_id: int, food_data: dict, image_url: str = "") -> Optional[str]:
+    """
+    Log food entry dengan tracking ID untuk feedback.
+
+    Args:
+        user_id: Telegram user ID
+        food_data: Dictionary containing food nutrition data
+        image_url: Optional URL to the food image for manual validation
+
+    Returns:
+        Entry ID if successful, None otherwise
+    """
     sheet = get_worksheet()
     if not sheet:
-        return False
+        return None
+
+    entry_id = generate_entry_id()
 
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
@@ -118,6 +163,9 @@ def log_food_entry(user_id: int, food_data: dict, image_url: str = "") -> bool:
     else:
         portion = food_data.get('portion', '-')
 
+    # Extract AI estimate from food dict
+    ai_estimate = food_data.get("weight_grams") or extract_weight_from_portion(portion)
+
     row = [
         date_str,
         time_str,
@@ -128,19 +176,26 @@ def log_food_entry(user_id: int, food_data: dict, image_url: str = "") -> bool:
         food_data.get('carbs', 0),
         food_data.get('fat', 0),
         portion,
-        image_url
+        image_url,
+        # Feedback columns
+        entry_id,
+        ai_estimate or "",
+        "",  # User Verified (empty = pending)
+        "",  # Actual Weight
+        "",  # Correction Ratio
+        "",  # Feedback Date
     ]
 
     try:
         sheet.append_row(row)
-        logger.info(f"Logged food entry for user {user_id}: {food_data.get('name')}")
-        return True
+        logger.info(f"Logged food entry for user {user_id}: {food_data.get('name')} (ID: {entry_id})")
+        return entry_id
     except Exception as e:
         logger.error(f"Failed to log food entry: {e}")
-        return False
+        return None
 
 
-def log_multiple_foods(user_id: int, foods: list, image_url: str = "") -> int:
+def log_multiple_foods(user_id: int, foods: list, image_url: str = "") -> list:
     """
     Log multiple food entries at once.
 
@@ -150,13 +205,14 @@ def log_multiple_foods(user_id: int, foods: list, image_url: str = "") -> int:
         image_url: Optional URL to the food image for manual validation
 
     Returns:
-        Number of entries logged successfully
+        List of entry IDs for successfully logged entries
     """
-    count = 0
+    entry_ids = []
     for food in foods:
-        if log_food_entry(user_id, food, image_url):
-            count += 1
-    return count
+        entry_id = log_food_with_tracking(user_id, food, image_url)
+        if entry_id:
+            entry_ids.append(entry_id)
+    return entry_ids
 
 
 def get_today_entries(user_id: int) -> list:
@@ -317,6 +373,160 @@ def delete_last_entry(user_id: int) -> Optional[dict]:
     except Exception as e:
         logger.error(f"Failed to delete last entry: {e}")
         return None
+
+
+def update_entry_feedback(entry_id: str, user_id: int, verified: bool = None,
+                          actual_weight: int = None) -> bool:
+    """
+    Update entry dengan feedback dari user.
+
+    Args:
+        entry_id: Entry ID to update
+        user_id: Telegram user ID (for security check)
+        verified: TRUE if user verified the estimate is correct
+        actual_weight: Actual weight in grams from user correction
+
+    Returns:
+        True if updated successfully, False otherwise
+    """
+    sheet = get_worksheet()
+    if not sheet:
+        return False
+
+    try:
+        # Find row by entry_id
+        all_values = sheet.get_all_values()
+
+        for i, row in enumerate(all_values[1:], start=2):  # Skip header
+            if len(row) > 10 and row[10] == entry_id and str(row[2]) == str(user_id):
+                # Found the entry
+                updates = {}
+
+                # Column L: User Verified (index 12)
+                if verified is not None:
+                    sheet.update_cell(i, 13, "TRUE" if verified else "FALSE")
+
+                # Column M: Actual Weight (index 13)
+                if actual_weight is not None:
+                    sheet.update_cell(i, 14, actual_weight)
+
+                    # Column N: Calculate correction ratio (index 14)
+                    ai_estimate = int(row[11]) if row[11] and row[11].isdigit() else None
+                    if ai_estimate and ai_estimate > 0:
+                        ratio = round(actual_weight / ai_estimate, 2)
+                        sheet.update_cell(i, 15, ratio)
+
+                # Column O: Feedback Date (index 15)
+                sheet.update_cell(i, 16, datetime.now().strftime("%Y-%m-%d %H:%M"))
+
+                logger.info(f"Updated feedback for entry {entry_id}")
+                return True
+
+        logger.warning(f"Entry {entry_id} not found for user {user_id}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to update entry feedback: {e}")
+        return False
+
+
+def delete_entry_by_id(entry_id: str, user_id: int) -> bool:
+    """
+    Delete entry by entry ID.
+
+    Args:
+        entry_id: Entry ID to delete
+        user_id: Telegram user ID (for security check)
+
+    Returns:
+        True if deleted successfully, False otherwise
+    """
+    sheet = get_worksheet()
+    if not sheet:
+        return False
+
+    try:
+        all_values = sheet.get_all_values()
+
+        for i, row in enumerate(all_values[1:], start=2):  # Skip header
+            if len(row) > 10 and row[10] == entry_id and str(row[2]) == str(user_id):
+                sheet.delete_rows(i)
+                logger.info(f"Deleted entry {entry_id} for user {user_id}")
+                return True
+
+        logger.warning(f"Entry {entry_id} not found for user {user_id}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to delete entry: {e}")
+        return False
+
+
+def get_user_correction_history(user_id: int) -> list:
+    """
+    Get correction history untuk user tertentu.
+
+    Args:
+        user_id: Telegram user ID
+
+    Returns:
+        List of corrections with food name, estimates, ratios, etc.
+    """
+    sheet = get_worksheet()
+    if not sheet:
+        return []
+
+    try:
+        all_values = sheet.get_all_values()
+        corrections = []
+
+        for row in all_values[1:]:  # Skip header
+            # Check if this row belongs to user and has actual weight (column 13)
+            if len(row) > 13 and str(row[2]) == str(user_id) and row[13]:
+                ai_estimate = int(row[11]) if row[11] and row[11].isdigit() else None
+                actual_weight = int(row[13]) if row[13] and row[13].isdigit() else None
+                correction_ratio = float(row[14]) if len(row) > 14 and row[14] else None
+
+                corrections.append({
+                    "food_name": row[3],
+                    "ai_estimate": ai_estimate,
+                    "actual_weight": actual_weight,
+                    "correction_ratio": correction_ratio,
+                    "date": row[0],
+                })
+
+        return corrections
+    except Exception as e:
+        logger.error(f"Failed to get correction history: {e}")
+        return []
+
+
+def get_average_correction_ratio(user_id: int, food_category: str = None) -> float:
+    """
+    Hitung rata-rata correction ratio untuk user.
+    Bisa filtered by food category untuk accuracy yang lebih tinggi.
+
+    Args:
+        user_id: Telegram user ID
+        food_category: Optional food category filter (not implemented yet)
+
+    Returns:
+        Average correction ratio (1.0 if no corrections)
+    """
+    corrections = get_user_correction_history(user_id)
+
+    if not corrections:
+        return 1.0  # No corrections, use 1:1 ratio
+
+    # Filter valid ratios (between 0.5 and 2.0 to avoid outliers)
+    ratios = [
+        c["correction_ratio"]
+        for c in corrections
+        if c["correction_ratio"] and 0.5 <= c["correction_ratio"] <= 2.0
+    ]
+
+    if not ratios:
+        return 1.0
+
+    return sum(ratios) / len(ratios)
 
 
 def is_sheets_configured() -> bool:
