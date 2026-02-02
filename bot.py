@@ -10,6 +10,8 @@ from sheets_service import (
     log_multiple_foods,
     get_today_entries,
     get_today_totals,
+    get_entries_by_date,
+    get_totals_by_date,
     get_recent_entries,
     delete_last_entry,
     is_sheets_configured,
@@ -62,7 +64,8 @@ Ketik nama dan porsi makanan, contoh:
 
 🎯 Contoh Target:
 /target 2000 - Set target 2000 kkal/hari
-/target - Lihat progress target saat ini
+/target - Lihat progress target hari ini
+/target 01/02/2024 - Lihat progress tanggal tertentu
 
 ❓ Ada pertanyaan? Langsung kirim pesan!"""
 
@@ -418,6 +421,38 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
 
 
+def parse_date_arg(date_arg: str) -> tuple[str, str]:
+    """
+    Parse date argument into YYYY-MM-DD format.
+
+    Args:
+        date_arg: Date string in various formats
+
+    Returns:
+        Tuple of (date_str in YYYY-MM-DD, display_str for user)
+        Returns (None, None) if parsing fails
+    """
+    # Try different date formats
+    formats = [
+        ("%Y-%m-%d", None),      # 2024-02-01
+        ("%d/%m/%Y", None),      # 01/02/2024
+        ("%d-%m-%Y", None),      # 01-02-2024
+        ("%d/%m/%y", None),      # 01/02/24
+        ("%d-%m-%y", None),      # 01-02-24
+    ]
+
+    for fmt, _ in formats:
+        try:
+            parsed = datetime.strptime(date_arg, fmt)
+            date_str = parsed.strftime("%Y-%m-%d")
+            display_str = parsed.strftime("%d %b %Y")
+            return date_str, display_str
+        except ValueError:
+            continue
+
+    return None, None
+
+
 async def target_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /target command - set or view daily calorie target."""
     if not is_sheets_configured():
@@ -430,7 +465,7 @@ async def target_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_id = update.effective_user.id
     args = context.args
 
-    # If no arguments, show current target with progress
+    # If no arguments, show current target with today's progress
     if not args:
         progress = get_daily_progress(user_id)
 
@@ -465,14 +500,63 @@ async def target_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("\n".join(lines))
         return
 
-    # Parse target value
+    arg = args[0]
+
+    # Check if argument is a date
+    date_str, display_str = parse_date_arg(arg)
+    if date_str:
+        # Show progress for specific date
+        progress = get_daily_progress(user_id, date_str)
+
+        if progress["target"] is None:
+            await update.message.reply_text(
+                f"🎯 Progress Kalori ({display_str})\n\n"
+                "Kamu belum mengatur target kalori.\n\n"
+                "Gunakan: /target <jumlah>\n"
+                "Contoh: /target 2000"
+            )
+            return
+
+        if progress["current"] == 0:
+            await update.message.reply_text(
+                f"📅 Progress Kalori ({display_str})\n\n"
+                f"Target: {progress['target']} kkal\n"
+                "Tidak ada makanan yang dicatat pada tanggal ini."
+            )
+            return
+
+        bar = format_progress_bar(progress["percentage"])
+        lines = [
+            f"📅 Progress Kalori ({display_str})\n",
+            f"Target: {progress['target']} kkal",
+            f"Tercapai: {progress['current']} kkal",
+            f"Sisa: {max(0, progress['remaining'])} kkal\n",
+            f"Progress: {bar}"
+        ]
+
+        # Add status message
+        if progress["status"] == "over":
+            over_amount = abs(progress["remaining"])
+            lines.append(f"\n⚠️ Melebihi target sebanyak {over_amount} kkal")
+        elif progress["status"] == "safe":
+            lines.append(f"\n✅ Dalam batas target")
+
+        await update.message.reply_text("\n".join(lines))
+        return
+
+    # Try to parse as target value (number)
     try:
-        target = int(args[0])
+        target = int(arg)
     except ValueError:
         await update.message.reply_text(
             "❌ Format tidak valid.\n\n"
-            "Gunakan: /target <angka>\n"
-            "Contoh: /target 2000"
+            "Gunakan:\n"
+            "• /target <angka> - Set target kalori\n"
+            "• /target <tanggal> - Lihat progress tanggal tertentu\n\n"
+            "Contoh:\n"
+            "• /target 2000\n"
+            "• /target 01/02/2024\n"
+            "• /target 2024-02-01"
         )
         return
 

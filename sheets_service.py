@@ -168,12 +168,13 @@ def log_multiple_foods(user_id: int, foods: list, image_url: str = "") -> int:
     return count
 
 
-def get_today_entries(user_id: int) -> list:
+def get_entries_by_date(user_id: int, date_str: str) -> list:
     """
-    Get all food entries for a user from today.
+    Get all food entries for a user from a specific date.
 
     Args:
         user_id: Telegram user ID
+        date_str: Date string in YYYY-MM-DD format
 
     Returns:
         List of food entries (each as a dict)
@@ -182,7 +183,6 @@ def get_today_entries(user_id: int) -> list:
     if not sheet:
         return []
 
-    today = datetime.now().strftime("%Y-%m-%d")
     user_id_str = str(user_id)
 
     try:
@@ -190,7 +190,7 @@ def get_today_entries(user_id: int) -> list:
 
         entries = []
         for record in all_records:
-            if record.get("Tanggal") == today and str(record.get("User ID")) == user_id_str:
+            if record.get("Tanggal") == date_str and str(record.get("User ID")) == user_id_str:
                 entries.append({
                     "time": record.get("Waktu", ""),
                     "name": record.get("Nama Makanan", ""),
@@ -203,8 +203,52 @@ def get_today_entries(user_id: int) -> list:
 
         return entries
     except Exception as e:
-        logger.error(f"Failed to get today's entries: {e}")
+        logger.error(f"Failed to get entries for {date_str}: {e}")
         return []
+
+
+def get_today_entries(user_id: int) -> list:
+    """
+    Get all food entries for a user from today.
+
+    Args:
+        user_id: Telegram user ID
+
+    Returns:
+        List of food entries (each as a dict)
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    return get_entries_by_date(user_id, today)
+
+
+def get_totals_by_date(user_id: int, date_str: str) -> dict:
+    """
+    Get total nutrition for a specific date.
+
+    Args:
+        user_id: Telegram user ID
+        date_str: Date string in YYYY-MM-DD format
+
+    Returns:
+        Dictionary with total calories, protein, carbs, fat
+    """
+    entries = get_entries_by_date(user_id, date_str)
+
+    totals = {
+        "calories": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0,
+        "count": len(entries)
+    }
+
+    for entry in entries:
+        totals["calories"] += entry.get("calories", 0) or 0
+        totals["protein"] += entry.get("protein", 0) or 0
+        totals["carbs"] += entry.get("carbs", 0) or 0
+        totals["fat"] += entry.get("fat", 0) or 0
+
+    return totals
 
 
 def get_today_totals(user_id: int) -> dict:
@@ -448,18 +492,24 @@ def get_calorie_target(user_id: int) -> Optional[int]:
         return None
 
 
-def get_daily_progress(user_id: int) -> dict:
+def get_daily_progress(user_id: int, date_str: Optional[str] = None) -> dict:
     """
     Get daily calorie progress for a user.
 
     Args:
         user_id: Telegram user ID
+        date_str: Optional date string in YYYY-MM-DD format. Defaults to today.
 
     Returns:
         Dictionary with target, current, remaining, percentage, and status
     """
     target = get_calorie_target(user_id)
-    totals = get_today_totals(user_id)
+
+    if date_str:
+        totals = get_totals_by_date(user_id, date_str)
+    else:
+        totals = get_today_totals(user_id)
+
     current = totals.get("calories", 0)
 
     if target is None:

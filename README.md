@@ -120,6 +120,7 @@ python bot.py
 | `/undo` | Delete the last logged entry |
 | `/target` | View current calorie target and progress |
 | `/target <kkal>` | Set daily calorie target (500-10000 kkal) |
+| `/target <date>` | View progress for a specific date (e.g., 01/02/2024) |
 
 **Interaction Examples:**
 

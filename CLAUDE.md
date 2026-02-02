@@ -32,6 +32,7 @@ Five-file modular design:
   - `/history` - Last 10 food entries grouped by date
   - `/undo` - Delete the most recent food entry
   - `/target <kkal>` - Set daily calorie target (500-10000 kkal range)
+  - `/target <date>` - View progress for a specific date (supports DD/MM/YYYY, YYYY-MM-DD)
   - Photo handler with caption weight support
   - Text handler with inline weight parsing
   - Calorie warning system - alerts at 80%, 90%, and 100%+ of target
@@ -53,11 +54,12 @@ Five-file modular design:
 - **sheets_service.py** - Google Sheets integration for data persistence:
   - `log_food_entry()` / `log_multiple_foods()` - Save food entries with timestamp
   - `get_today_entries()` / `get_today_totals()` - Daily summary
+  - `get_entries_by_date()` / `get_totals_by_date()` - Query entries by specific date
   - `get_recent_entries()` - Paginated history
   - `delete_last_entry()` - Undo support
   - `is_sheets_configured()` - Check if Sheets is set up
   - `set_calorie_target()` / `get_calorie_target()` - User calorie target management
-  - `get_daily_progress()` - Returns target progress with status (safe/warning/approaching/over)
+  - `get_daily_progress(user_id, date_str=None)` - Returns target progress with status (safe/warning/approaching/over)
 
 - **imagekit_service.py** - ImageKit integration for permanent image storage:
   - `upload_food_image()` - Upload photos with user/food metadata
