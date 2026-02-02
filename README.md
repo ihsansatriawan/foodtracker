@@ -18,6 +18,9 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | **Daily Summary** | ✅ Done | `/today` command shows today's calorie totals |
 | **History** | ✅ Done | `/history` command shows recent food entries |
 | **Undo** | ✅ Done | `/undo` command deletes last entry |
+| **Goal Tracking** | ✅ Done | `/target` command to set daily calorie goals |
+| **Progress Bar** | ✅ Done | Visual emoji progress bar with color-coded status |
+| **Calorie Warnings** | ✅ Done | Alerts when approaching or exceeding target |
 
 ### Supported Input Formats
 
@@ -112,9 +115,11 @@ python bot.py
 |---------|-------------|
 | `/start` | Welcome message and usage instructions |
 | `/help` | Detailed usage guide |
-| `/today` | Show today's food log and calorie summary |
+| `/today` | Show today's food log and calorie summary with progress |
 | `/history` | Show last 10 food entries |
 | `/undo` | Delete the last logged entry |
+| `/target` | View current calorie target and progress |
+| `/target <kkal>` | Set daily calorie target (500-10000 kkal) |
 
 **Interaction Examples:**
 
@@ -159,10 +164,10 @@ food_tracker/
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         bot.py                                  │
-│  • /start, /help, /today, /history, /undo commands              │
+│  • /start, /help, /today, /history, /undo, /target commands     │
 │  • Photo & text message handlers                                │
 │  • Weight parsing from caption/text                             │
-│  • Emoji-rich Indonesian response formatting                    │
+│  • Goal tracking with progress bar & calorie warnings           │
 └───────────┬─────────────────────┬─────────────────────┬─────────┘
             │                     │                     │
             ▼                     ▼                     ▼
@@ -170,14 +175,14 @@ food_tracker/
 │ gemini_service.py │ │ sheets_service.py │ │imagekit_service.py│
 │ • analyze_image() │ │ • log_food_entry()│ │ • upload_image()  │
 │ • analyze_text()  │ │ • get_today()     │ │ • Permanent URLs  │
-│ • parse_weight()  │ │ • get_recent()    │ │                   │
+│ • parse_weight()  │ │ • calorie_target()│ │                   │
 └─────────┬─────────┘ └─────────┬─────────┘ └─────────┬─────────┘
           │                     │                     │
           ▼                     ▼                     ▼
 ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
 │  Gemini 2.0 Flash │ │  Google Sheets    │ │     ImageKit      │
 │  • Vision AI      │ │  • Food logging   │ │  • Image storage  │
-│  • Nutrition est. │ │  • User data      │ │  • CDN delivery   │
+│  • Nutrition est. │ │  • User settings  │ │  • CDN delivery   │
 └───────────────────┘ └───────────────────┘ └───────────────────┘
 ```
 
@@ -200,8 +205,8 @@ python bot.py
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the full development roadmap including:
-- ✅ Completed MVP features
-- 🔜 Planned features (Google Sheets, goal tracking, etc.)
+- ✅ Completed: MVP features, Data persistence, Goal tracking
+- 🔜 Planned: Enhanced analysis, User experience improvements
 - 🔧 Technical improvements
 
 ## Contributing

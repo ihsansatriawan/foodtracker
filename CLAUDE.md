@@ -64,9 +64,13 @@ Five-file modular design:
   - `is_imagekit_configured()` - Check if ImageKit is set up
   - Generates permanent URLs stored in Google Sheets for manual validation
 
-**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned
+**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned → Calorie warning shown if target exceeded
 
 **Response Format:** All Gemini responses are normalized to `{foods: [...], total: {...}}` structure for consistent handling of single and multi-food detection.
+
+**Google Sheets Structure:**
+- "Food Log" worksheet - Stores food entries with timestamp, nutrition data, and image URLs
+- "User Settings" worksheet - Stores user calorie targets (User ID, Kalori Target, Created At, Updated At)
 
 ## Tech Stack
 
