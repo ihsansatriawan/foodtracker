@@ -146,7 +146,9 @@ food_tracker/
 ├── .gitignore          # Git ignore rules
 ├── CLAUDE.md           # AI assistant guidelines
 ├── README.md           # This file
-└── ROADMAP.md          # Development roadmap
+├── ROADMAP.md          # Development roadmap
+└── docs/
+    └── WEIGHT_FEEDBACK_LOOP_PLAN.md  # Gram accuracy improvement plan
 ```
 
 ## Architecture
@@ -201,8 +203,21 @@ python bot.py
 
 See [ROADMAP.md](ROADMAP.md) for the full development roadmap including:
 - ✅ Completed MVP features
-- 🔜 Planned features (Google Sheets, goal tracking, etc.)
+- 🔜 Planned features (goal tracking, enhanced analysis, etc.)
 - 🔧 Technical improvements
+
+### Coming Soon: Weight Feedback Loop
+
+See [docs/WEIGHT_FEEDBACK_LOOP_PLAN.md](docs/WEIGHT_FEEDBACK_LOOP_PLAN.md) for the detailed implementation plan to improve gram estimation accuracy.
+
+| Phase | Feature | Description |
+|-------|---------|-------------|
+| 1 | Feedback UI | Inline keyboard buttons to verify/correct weight |
+| 2 | Schema Extension | Store correction data in Google Sheets |
+| 3 | Learning System | Adjust future estimates based on user corrections |
+| 4 | Analytics | `/accuracy` command to show personal stats |
+
+**Target:** 20-30% improvement in weight estimation accuracy
 
 ## Contributing
 
