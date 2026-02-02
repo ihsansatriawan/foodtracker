@@ -95,15 +95,15 @@ Development roadmap for the Food Tracker Telegram bot.
 
 ---
 
-### Phase 7: User Experience 💫
+### Phase 7: User Experience 💫 ✅
 *Priority: Medium*
 
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| Quick Buttons | 🟡 Medium | Inline buttons for common foods |
-| Favorites | 🟡 Medium | One-tap logging for frequent meals |
-| Meal Templates | 🟢 Low | Reusable meal combinations |
-| Voice Input | 🟢 Low | Voice messages for food logging |
+| Feature | Priority | Status | Description |
+|---------|----------|--------|-------------|
+| Quick Buttons | 🟡 Medium | ✅ Done | Inline buttons after analysis (Log lagi, Hari ini, Batalkan) |
+| Favorites | 🟡 Medium | ✅ Done | One-tap logging for frequent meals with /favorites, /addfav, /delfav |
+| Meal Templates | 🟢 Low | ✅ Done | Reusable meal combinations with /templates, /newtemplate, /deltemplate |
+| Voice Input | 🟢 Low | ⏳ Pending | Voice messages for food logging |
 
 ---
 

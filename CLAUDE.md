@@ -23,7 +23,7 @@ No automated tests exist. Manual testing involves sending food photos/text to th
 
 ## Architecture
 
-Five-file modular design:
+Six-file modular design:
 
 - **bot.py** - Telegram bot entry point using python-telegram-bot. Handles commands and message handlers. Features:
   - `/start` - Welcome message with usage overview
@@ -31,9 +31,23 @@ Five-file modular design:
   - `/today` - Daily food log and calorie summary
   - `/history` - Last 10 food entries grouped by date
   - `/undo` - Delete the most recent food entry
+  - `/favorites` - View and quick-log favorite foods
+  - `/addfav` - Add food to favorites from recent entries
+  - `/delfav` - Remove food from favorites
+  - `/templates` - View and log meal templates
+  - `/newtemplate <name>` - Create new meal template (ConversationHandler)
+  - `/deltemplate` - Delete meal templates
   - Photo handler with caption weight support
   - Text handler with inline weight parsing
+  - Callback handler for inline keyboard buttons
   - Slash command menu via `set_my_commands()` - commands appear when user types "/"
+
+- **keyboards.py** - Inline keyboard builders for Telegram:
+  - `get_post_analysis_keyboard()` - Quick actions after food analysis (Log lagi, Hari ini, Batalkan)
+  - `get_favorites_keyboard()` / `get_favorites_delete_keyboard()` - Favorites management
+  - `get_templates_keyboard()` / `get_templates_delete_keyboard()` - Templates management
+  - `get_recent_foods_keyboard()` - Select recent foods to add to favorites
+  - `get_template_creation_keyboard()` - Done/Cancel during template creation
 
 - **config.py** - Loads environment variables via python-dotenv:
   - `TELEGRAM_BOT_TOKEN` - Telegram Bot API token
@@ -54,6 +68,8 @@ Five-file modular design:
   - `get_recent_entries()` - Paginated history
   - `delete_last_entry()` - Undo support
   - `is_sheets_configured()` - Check if Sheets is set up
+  - Favorites functions: `get_user_favorites()`, `add_to_favorites()`, `remove_from_favorites()`, `suggest_favorites_from_history()`
+  - Templates functions: `get_user_templates()`, `create_template()`, `delete_template()`, `log_template()`
 
 - **imagekit_service.py** - ImageKit integration for permanent image storage:
   - `upload_food_image()` - Upload photos with user/food metadata
