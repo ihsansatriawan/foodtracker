@@ -27,6 +27,7 @@ Development roadmap for the Food Tracker Telegram bot.
   - [x] Text handler with inline weight parsing
 - [x] Indonesian language interface
 - [x] Emoji-rich nutrition response formatting
+- [x] Slash command menu - Commands appear when user types "/"
 
 ### Weight Input Feature ✅
 - [x] Photo + weight caption (e.g., "250 gram")

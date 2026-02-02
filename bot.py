@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 from config import TELEGRAM_BOT_TOKEN
@@ -309,14 +309,31 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
 
 
+async def setup_bot_commands(application) -> None:
+    """Set up bot commands for Telegram menu.
+
+    This registers commands with Telegram so they appear
+    when users type '/' in the chat.
+    """
+    commands = [
+        BotCommand("start", "Mulai bot dan lihat cara penggunaan"),
+        BotCommand("help", "Panduan lengkap penggunaan bot"),
+        BotCommand("today", "Lihat ringkasan kalori hari ini"),
+        BotCommand("history", "Lihat riwayat 10 makanan terakhir"),
+        BotCommand("undo", "Hapus entri makanan terakhir"),
+    ]
+    await application.bot.set_my_commands(commands)
+    logger.info("Bot commands registered successfully")
+
+
 def main() -> None:
     """Start the bot."""
     if not TELEGRAM_BOT_TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN not set!")
         return
 
-    # Create application
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    # Create application with post_init to register commands
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(setup_bot_commands).build()
 
     # Add handlers
     application.add_handler(CommandHandler("start", start_command))
