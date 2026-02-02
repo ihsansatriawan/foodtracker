@@ -13,7 +13,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # Then add TELEGRAM_BOT_TOKEN and GEMINI_API_KEY
+cp .env.example .env  # Then add required API keys
 
 # Run the bot
 python bot.py
@@ -23,19 +23,44 @@ No automated tests exist. Manual testing involves sending food photos/text to th
 
 ## Architecture
 
-Three-file modular design:
+Five-file modular design:
 
-- **bot.py** - Telegram bot entry point using python-telegram-bot. Handles `/start`, `/help` commands and photo/text message handlers. Formats nutrition responses with emoji-rich Indonesian UI.
+- **bot.py** - Telegram bot entry point using python-telegram-bot. Handles commands and message handlers. Features:
+  - `/start` - Welcome message with usage overview
+  - `/help` - Detailed usage guide with examples
+  - `/today` - Daily food log and calorie summary
+  - `/history` - Last 10 food entries grouped by date
+  - `/undo` - Delete the most recent food entry
+  - Photo handler with caption weight support
+  - Text handler with inline weight parsing
+  - Slash command menu via `set_my_commands()` - commands appear when user types "/"
 
-- **config.py** - Loads `TELEGRAM_BOT_TOKEN` and `GEMINI_API_KEY` from environment via python-dotenv.
+- **config.py** - Loads environment variables via python-dotenv:
+  - `TELEGRAM_BOT_TOKEN` - Telegram Bot API token
+  - `GEMINI_API_KEY` - Google Gemini API key
+  - `GOOGLE_SHEETS_CREDENTIALS` - Service account JSON for Sheets
+  - `GOOGLE_SHEETS_ID` - Target spreadsheet ID
+  - `IMAGEKIT_*` - ImageKit credentials for image storage
 
-- **gemini_service.py** - Gemini AI integration with two analysis functions:
+- **gemini_service.py** - Gemini AI integration:
   - `analyze_food_image(image_bytes, weight_grams=None)` - Vision-based food analysis
   - `analyze_food_text(food_description, weight_grams=None)` - Text-based food analysis
   - `parse_weight_from_text(text)` - Extracts weight in grams from user input (supports "250g", "0.5 kg", etc.)
   - Uses `PROMPT_TEMPLATE` for estimation mode and `PROMPT_WITH_WEIGHT` for precise weight-based calculations
 
-**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Emoji-rich nutrition breakdown returned
+- **sheets_service.py** - Google Sheets integration for data persistence:
+  - `log_food_entry()` / `log_multiple_foods()` - Save food entries with timestamp
+  - `get_today_entries()` / `get_today_totals()` - Daily summary
+  - `get_recent_entries()` - Paginated history
+  - `delete_last_entry()` - Undo support
+  - `is_sheets_configured()` - Check if Sheets is set up
+
+- **imagekit_service.py** - ImageKit integration for permanent image storage:
+  - `upload_food_image()` - Upload photos with user/food metadata
+  - `is_imagekit_configured()` - Check if ImageKit is set up
+  - Generates permanent URLs stored in Google Sheets for manual validation
+
+**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned
 
 **Response Format:** All Gemini responses are normalized to `{foods: [...], total: {...}}` structure for consistent handling of single and multi-food detection.
 
@@ -44,11 +69,13 @@ Three-file modular design:
 - Python 3.10+
 - python-telegram-bot 21.0
 - google-generativeai 0.8.0 (Gemini 2.0 Flash model)
+- gspread + google-auth (Google Sheets API)
+- imagekitio (ImageKit SDK)
 - python-dotenv
 
 ## Documentation
 
 - **ROADMAP.md** - Development roadmap with completed and planned features
-  - Update when implementing new features (mark as ✅ completed)
+  - Update when implementing new features (mark as completed)
   - Update when adding new planned features
   - Keep priority levels current
