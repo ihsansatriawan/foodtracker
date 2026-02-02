@@ -30,9 +30,18 @@ HEADERS = [
     "Image URL"     # Telegram file URL for validation
 ]
 
+# User Settings sheet headers
+SETTINGS_HEADERS = [
+    "User ID",       # Telegram user ID (primary key)
+    "Kalori Target", # Daily calorie target (kkal)
+    "Created At",    # Timestamp when first created
+    "Updated At"     # Timestamp when last updated
+]
+
 # Cache for the sheets client
 _client: Optional[gspread.Client] = None
 _sheet: Optional[gspread.Worksheet] = None
+_settings_sheet: Optional[gspread.Worksheet] = None
 
 
 def get_sheet_client() -> Optional[gspread.Client]:
@@ -326,3 +335,159 @@ def is_sheets_configured() -> bool:
     if not GOOGLE_CREDENTIALS_FILE or not os.path.exists(GOOGLE_CREDENTIALS_FILE):
         return False
     return True
+
+
+def get_settings_worksheet() -> Optional[gspread.Worksheet]:
+    """Get the user settings worksheet, creating it if necessary."""
+    global _settings_sheet
+
+    if _settings_sheet is not None:
+        return _settings_sheet
+
+    if not GOOGLE_SHEETS_ID:
+        logger.warning("GOOGLE_SHEETS_ID not configured")
+        return None
+
+    client = get_sheet_client()
+    if not client:
+        return None
+
+    try:
+        spreadsheet = client.open_by_key(GOOGLE_SHEETS_ID)
+
+        # Try to get "User Settings" sheet, or create it
+        try:
+            _settings_sheet = spreadsheet.worksheet("User Settings")
+        except gspread.WorksheetNotFound:
+            _settings_sheet = spreadsheet.add_worksheet(title="User Settings", rows=100, cols=len(SETTINGS_HEADERS))
+            _settings_sheet.append_row(SETTINGS_HEADERS)
+            logger.info("Created 'User Settings' worksheet with headers")
+
+        return _settings_sheet
+    except Exception as e:
+        logger.error(f"Failed to get settings worksheet: {e}")
+        return None
+
+
+def set_calorie_target(user_id: int, target: int) -> bool:
+    """
+    Save or update daily calorie target for a user.
+
+    Args:
+        user_id: Telegram user ID
+        target: Daily calorie target in kkal
+
+    Returns:
+        True if saved successfully, False otherwise
+    """
+    sheet = get_settings_worksheet()
+    if not sheet:
+        return False
+
+    user_id_str = str(user_id)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    try:
+        all_values = sheet.get_all_values()
+
+        # Find existing row for this user
+        for i, row in enumerate(all_values):
+            if i == 0:  # Skip header
+                continue
+            if len(row) >= 1 and str(row[0]) == user_id_str:
+                # Update existing row
+                row_index = i + 1  # gspread uses 1-based indexing
+                sheet.update_cell(row_index, 2, target)  # Kalori Target
+                sheet.update_cell(row_index, 4, now)     # Updated At
+                logger.info(f"Updated calorie target for user {user_id}: {target} kkal")
+                return True
+
+        # No existing row, create new one
+        new_row = [user_id_str, target, now, now]
+        sheet.append_row(new_row)
+        logger.info(f"Created calorie target for user {user_id}: {target} kkal")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to set calorie target: {e}")
+        return False
+
+
+def get_calorie_target(user_id: int) -> Optional[int]:
+    """
+    Retrieve daily calorie target for a user.
+
+    Args:
+        user_id: Telegram user ID
+
+    Returns:
+        Daily calorie target in kkal, or None if not set
+    """
+    sheet = get_settings_worksheet()
+    if not sheet:
+        return None
+
+    user_id_str = str(user_id)
+
+    try:
+        all_values = sheet.get_all_values()
+
+        for i, row in enumerate(all_values):
+            if i == 0:  # Skip header
+                continue
+            if len(row) >= 2 and str(row[0]) == user_id_str:
+                try:
+                    return int(row[1])
+                except (ValueError, TypeError):
+                    return None
+
+        return None
+
+    except Exception as e:
+        logger.error(f"Failed to get calorie target: {e}")
+        return None
+
+
+def get_daily_progress(user_id: int) -> dict:
+    """
+    Get daily calorie progress for a user.
+
+    Args:
+        user_id: Telegram user ID
+
+    Returns:
+        Dictionary with target, current, remaining, percentage, and status
+    """
+    target = get_calorie_target(user_id)
+    totals = get_today_totals(user_id)
+    current = totals.get("calories", 0)
+
+    if target is None:
+        return {
+            "target": None,
+            "current": current,
+            "remaining": None,
+            "percentage": None,
+            "status": "no_target"
+        }
+
+    remaining = target - current
+    percentage = (current / target * 100) if target > 0 else 0
+
+    # Determine status based on percentage
+    if percentage >= 100:
+        status = "over"
+    elif percentage >= 90:
+        status = "approaching"
+    elif percentage >= 80:
+        status = "warning"
+    else:
+        status = "safe"
+
+    return {
+        "target": target,
+        "current": current,
+        "remaining": remaining,
+        "percentage": round(percentage, 1),
+        "status": status
+    }

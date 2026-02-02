@@ -28,11 +28,13 @@ Five-file modular design:
 - **bot.py** - Telegram bot entry point using python-telegram-bot. Handles commands and message handlers. Features:
   - `/start` - Welcome message with usage overview
   - `/help` - Detailed usage guide with examples
-  - `/today` - Daily food log and calorie summary
+  - `/today` - Daily food log and calorie summary with progress bar (if target set)
   - `/history` - Last 10 food entries grouped by date
   - `/undo` - Delete the most recent food entry
+  - `/target <kkal>` - Set daily calorie target (500-10000 kkal range)
   - Photo handler with caption weight support
   - Text handler with inline weight parsing
+  - Calorie warning system - alerts at 80%, 90%, and 100%+ of target
   - Slash command menu via `set_my_commands()` - commands appear when user types "/"
 
 - **config.py** - Loads environment variables via python-dotenv:
@@ -54,6 +56,8 @@ Five-file modular design:
   - `get_recent_entries()` - Paginated history
   - `delete_last_entry()` - Undo support
   - `is_sheets_configured()` - Check if Sheets is set up
+  - `set_calorie_target()` / `get_calorie_target()` - User calorie target management
+  - `get_daily_progress()` - Returns target progress with status (safe/warning/approaching/over)
 
 - **imagekit_service.py** - ImageKit integration for permanent image storage:
   - `upload_food_image()` - Upload photos with user/food metadata
