@@ -10,9 +10,14 @@ from sheets_service import (
     log_multiple_foods,
     get_today_entries,
     get_today_totals,
+    get_entries_by_date,
+    get_totals_by_date,
     get_recent_entries,
     delete_last_entry,
-    is_sheets_configured
+    is_sheets_configured,
+    set_calorie_target,
+    get_calorie_target,
+    get_daily_progress
 )
 from imagekit_service import upload_food_image, is_imagekit_configured
 
@@ -55,6 +60,12 @@ Ketik nama dan porsi makanan, contoh:
 /today - Lihat ringkasan kalori hari ini
 /history - Lihat riwayat makanan terakhir
 /undo - Hapus entri makanan terakhir
+/target - Atur target kalori harian
+
+🎯 Contoh Target:
+/target 2000 - Set target 2000 kkal/hari
+/target - Lihat progress target hari ini
+/target 01/02/2024 - Lihat progress tanggal tertentu
 
 ❓ Ada pertanyaan? Langsung kirim pesan!"""
 
@@ -100,6 +111,60 @@ def format_nutrition_response(data: dict) -> str:
             lines.append(f"⚖️ Berat: {total.get('weight_grams')} gram")
 
     return "\n".join(lines)
+
+
+def format_progress_bar(percentage: float, width: int = 10) -> str:
+    """
+    Format a progress bar with emoji.
+
+    Args:
+        percentage: Progress percentage (0-100+)
+        width: Number of blocks in the bar
+
+    Returns:
+        Emoji progress bar string
+    """
+    filled = min(int(percentage / 100 * width), width)
+    empty = width - filled
+
+    # Choose color based on percentage threshold
+    if percentage >= 100:
+        block = "🟥"
+    elif percentage >= 90:
+        block = "🟧"
+    elif percentage >= 80:
+        block = "🟨"
+    else:
+        block = "🟩"
+
+    bar = block * filled + "⬜" * empty
+
+    # Add warning indicator if over limit
+    if percentage >= 100:
+        return f"{bar} ⚠️"
+    return f"{bar} {percentage:.0f}%"
+
+
+def get_warning_message(status: str, percentage: float, remaining: int) -> str:
+    """
+    Get warning message based on calorie status.
+
+    Args:
+        status: Status string (safe, warning, approaching, over)
+        percentage: Current percentage of target
+        remaining: Remaining calories (can be negative if over)
+
+    Returns:
+        Warning message string, or empty string if no warning needed
+    """
+    if status == "over":
+        over_amount = abs(remaining)
+        return f"\n⚠️ Kamu sudah melebihi target sebanyak {over_amount} kkal!"
+    elif status == "approaching":
+        return f"\n⚡ Hampir mencapai target! Sisa {remaining} kkal lagi."
+    elif status == "warning":
+        return f"\n📊 Sudah {percentage:.0f}% dari target. Sisa {remaining} kkal."
+    return ""
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -160,6 +225,17 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if logged:
             response += "\n\n✅ Tersimpan ke log"
 
+            # Add calorie warning if target is set
+            progress = get_daily_progress(user_id)
+            if progress["target"] is not None and progress["status"] != "safe":
+                warning = get_warning_message(
+                    progress["status"],
+                    progress["percentage"],
+                    progress["remaining"]
+                )
+                if warning:
+                    response += warning
+
         await update.message.reply_text(response)
 
     except Exception as e:
@@ -207,6 +283,17 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if logged:
             response += "\n\n✅ Tersimpan ke log"
 
+            # Add calorie warning if target is set
+            progress = get_daily_progress(user_id)
+            if progress["target"] is not None and progress["status"] != "safe":
+                warning = get_warning_message(
+                    progress["status"],
+                    progress["percentage"],
+                    progress["remaining"]
+                )
+                if warning:
+                    response += warning
+
         await update.message.reply_text(response)
 
     except Exception as e:
@@ -226,15 +313,20 @@ async def today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user_id = update.effective_user.id
     entries = get_today_entries(user_id)
     totals = get_today_totals(user_id)
+    progress = get_daily_progress(user_id)
 
     today_str = datetime.now().strftime("%d %b %Y")
 
     if not entries:
-        await update.message.reply_text(
+        message = (
             f"📅 Makanan Hari Ini ({today_str})\n\n"
             "Belum ada makanan yang dicatat hari ini.\n"
             "Kirim foto atau ketik nama makanan untuk mulai tracking!"
         )
+        # Suggest setting target if not set
+        if progress["target"] is None:
+            message += "\n\n💡 Tip: Gunakan /target untuk mengatur target kalori harian."
+        await update.message.reply_text(message)
         return
 
     lines = [f"📅 Makanan Hari Ini ({today_str})\n"]
@@ -248,6 +340,26 @@ async def today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     lines.append(f"🥩 Protein: {totals['protein']}g")
     lines.append(f"🍚 Karbo: {totals['carbs']}g")
     lines.append(f"🧈 Lemak: {totals['fat']}g")
+
+    # Add progress bar section if target is set
+    if progress["target"] is not None:
+        bar = format_progress_bar(progress["percentage"])
+        lines.append("\n━━━━━━━━━━━━━━━━━━")
+        lines.append("🎯 Progress Target:")
+        lines.append(f"Target: {progress['target']} kkal")
+        lines.append(f"Sisa: {max(0, progress['remaining'])} kkal")
+        lines.append(f"\n{bar}")
+
+        # Add warning if applicable
+        warning = get_warning_message(
+            progress["status"],
+            progress["percentage"],
+            progress["remaining"]
+        )
+        if warning:
+            lines.append(warning)
+    else:
+        lines.append("\n💡 Tip: Gunakan /target untuk mengatur target kalori harian.")
 
     await update.message.reply_text("\n".join(lines))
 
@@ -309,6 +421,171 @@ async def undo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
 
 
+def parse_date_arg(date_arg: str) -> tuple[str, str]:
+    """
+    Parse date argument into YYYY-MM-DD format.
+
+    Args:
+        date_arg: Date string in various formats
+
+    Returns:
+        Tuple of (date_str in YYYY-MM-DD, display_str for user)
+        Returns (None, None) if parsing fails
+    """
+    # Try different date formats
+    formats = [
+        ("%Y-%m-%d", None),      # 2024-02-01
+        ("%d/%m/%Y", None),      # 01/02/2024
+        ("%d-%m-%Y", None),      # 01-02-2024
+        ("%d/%m/%y", None),      # 01/02/24
+        ("%d-%m-%y", None),      # 01-02-24
+    ]
+
+    for fmt, _ in formats:
+        try:
+            parsed = datetime.strptime(date_arg, fmt)
+            date_str = parsed.strftime("%Y-%m-%d")
+            display_str = parsed.strftime("%d %b %Y")
+            return date_str, display_str
+        except ValueError:
+            continue
+
+    return None, None
+
+
+async def target_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /target command - set or view daily calorie target."""
+    if not is_sheets_configured():
+        await update.message.reply_text(
+            "⚠️ Fitur tracking belum dikonfigurasi.\n"
+            "Hubungi admin untuk setup Google Sheets."
+        )
+        return
+
+    user_id = update.effective_user.id
+    args = context.args
+
+    # If no arguments, show current target with today's progress
+    if not args:
+        progress = get_daily_progress(user_id)
+
+        if progress["target"] is None:
+            await update.message.reply_text(
+                "🎯 Target Kalori Harian\n\n"
+                "Kamu belum mengatur target kalori.\n\n"
+                "Gunakan: /target <jumlah>\n"
+                "Contoh: /target 2000"
+            )
+            return
+
+        # Show current progress
+        bar = format_progress_bar(progress["percentage"])
+        lines = [
+            "🎯 Target Kalori Harian\n",
+            f"Target: {progress['target']} kkal",
+            f"Tercapai: {progress['current']} kkal",
+            f"Sisa: {max(0, progress['remaining'])} kkal\n",
+            f"Progress: {bar}"
+        ]
+
+        # Add warning if applicable
+        warning = get_warning_message(
+            progress["status"],
+            progress["percentage"],
+            progress["remaining"]
+        )
+        if warning:
+            lines.append(warning)
+
+        await update.message.reply_text("\n".join(lines))
+        return
+
+    arg = args[0]
+
+    # Check if argument is a date
+    date_str, display_str = parse_date_arg(arg)
+    if date_str:
+        # Show progress for specific date
+        progress = get_daily_progress(user_id, date_str)
+
+        if progress["target"] is None:
+            await update.message.reply_text(
+                f"🎯 Progress Kalori ({display_str})\n\n"
+                "Kamu belum mengatur target kalori.\n\n"
+                "Gunakan: /target <jumlah>\n"
+                "Contoh: /target 2000"
+            )
+            return
+
+        if progress["current"] == 0:
+            await update.message.reply_text(
+                f"📅 Progress Kalori ({display_str})\n\n"
+                f"Target: {progress['target']} kkal\n"
+                "Tidak ada makanan yang dicatat pada tanggal ini."
+            )
+            return
+
+        bar = format_progress_bar(progress["percentage"])
+        lines = [
+            f"📅 Progress Kalori ({display_str})\n",
+            f"Target: {progress['target']} kkal",
+            f"Tercapai: {progress['current']} kkal",
+            f"Sisa: {max(0, progress['remaining'])} kkal\n",
+            f"Progress: {bar}"
+        ]
+
+        # Add status message
+        if progress["status"] == "over":
+            over_amount = abs(progress["remaining"])
+            lines.append(f"\n⚠️ Melebihi target sebanyak {over_amount} kkal")
+        elif progress["status"] == "safe":
+            lines.append(f"\n✅ Dalam batas target")
+
+        await update.message.reply_text("\n".join(lines))
+        return
+
+    # Try to parse as target value (number)
+    try:
+        target = int(arg)
+    except ValueError:
+        await update.message.reply_text(
+            "❌ Format tidak valid.\n\n"
+            "Gunakan:\n"
+            "• /target <angka> - Set target kalori\n"
+            "• /target <tanggal> - Lihat progress tanggal tertentu\n\n"
+            "Contoh:\n"
+            "• /target 2000\n"
+            "• /target 01/02/2024\n"
+            "• /target 2024-02-01"
+        )
+        return
+
+    # Validate range (500-10000 kkal)
+    if target < 500 or target > 10000:
+        await update.message.reply_text(
+            "❌ Target harus antara 500 - 10000 kkal.\n\n"
+            "Contoh: /target 2000"
+        )
+        return
+
+    # Save target
+    if set_calorie_target(user_id, target):
+        progress = get_daily_progress(user_id)
+        bar = format_progress_bar(progress["percentage"])
+
+        await update.message.reply_text(
+            f"✅ Target kalori harian diatur: {target} kkal\n\n"
+            f"Progress hari ini:\n"
+            f"Tercapai: {progress['current']} kkal\n"
+            f"Sisa: {max(0, progress['remaining'])} kkal\n\n"
+            f"{bar}"
+        )
+    else:
+        await update.message.reply_text(
+            "❌ Gagal menyimpan target. Coba lagi nanti."
+        )
+
+
 async def setup_bot_commands(application) -> None:
     """Set up bot commands for Telegram menu.
 
@@ -321,6 +598,7 @@ async def setup_bot_commands(application) -> None:
         BotCommand("today", "Lihat ringkasan kalori hari ini"),
         BotCommand("history", "Lihat riwayat 10 makanan terakhir"),
         BotCommand("undo", "Hapus entri makanan terakhir"),
+        BotCommand("target", "Atur target kalori harian"),
     ]
     await application.bot.set_my_commands(commands)
     logger.info("Bot commands registered successfully")
@@ -341,6 +619,7 @@ def main() -> None:
     application.add_handler(CommandHandler("today", today_command))
     application.add_handler(CommandHandler("history", history_command))
     application.add_handler(CommandHandler("undo", undo_command))
+    application.add_handler(CommandHandler("target", target_command))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 

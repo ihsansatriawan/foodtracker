@@ -28,11 +28,14 @@ Five-file modular design:
 - **bot.py** - Telegram bot entry point using python-telegram-bot. Handles commands and message handlers. Features:
   - `/start` - Welcome message with usage overview
   - `/help` - Detailed usage guide with examples
-  - `/today` - Daily food log and calorie summary
+  - `/today` - Daily food log and calorie summary with progress bar (if target set)
   - `/history` - Last 10 food entries grouped by date
   - `/undo` - Delete the most recent food entry
+  - `/target <kkal>` - Set daily calorie target (500-10000 kkal range)
+  - `/target <date>` - View progress for a specific date (supports DD/MM/YYYY, YYYY-MM-DD)
   - Photo handler with caption weight support
   - Text handler with inline weight parsing
+  - Calorie warning system - alerts at 80%, 90%, and 100%+ of target
   - Slash command menu via `set_my_commands()` - commands appear when user types "/"
 
 - **config.py** - Loads environment variables via python-dotenv:
@@ -51,18 +54,25 @@ Five-file modular design:
 - **sheets_service.py** - Google Sheets integration for data persistence:
   - `log_food_entry()` / `log_multiple_foods()` - Save food entries with timestamp
   - `get_today_entries()` / `get_today_totals()` - Daily summary
+  - `get_entries_by_date()` / `get_totals_by_date()` - Query entries by specific date
   - `get_recent_entries()` - Paginated history
   - `delete_last_entry()` - Undo support
   - `is_sheets_configured()` - Check if Sheets is set up
+  - `set_calorie_target()` / `get_calorie_target()` - User calorie target management
+  - `get_daily_progress(user_id, date_str=None)` - Returns target progress with status (safe/warning/approaching/over)
 
 - **imagekit_service.py** - ImageKit integration for permanent image storage:
   - `upload_food_image()` - Upload photos with user/food metadata
   - `is_imagekit_configured()` - Check if ImageKit is set up
   - Generates permanent URLs stored in Google Sheets for manual validation
 
-**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned
+**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned → Calorie warning shown if target exceeded
 
 **Response Format:** All Gemini responses are normalized to `{foods: [...], total: {...}}` structure for consistent handling of single and multi-food detection.
+
+**Google Sheets Structure:**
+- "Food Log" worksheet - Stores food entries with timestamp, nutrition data, and image URLs
+- "User Settings" worksheet - Stores user calorie targets (User ID, Kalori Target, Created At, Updated At)
 
 ## Tech Stack
 

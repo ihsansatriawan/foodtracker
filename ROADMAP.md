@@ -68,17 +68,39 @@ Development roadmap for the Food Tracker Telegram bot.
 
 ---
 
+### Phase 5: Goal Tracking ✅
+- [x] `/target <kkal>` command - Set daily calorie target (500-10000 kkal)
+- [x] `/target` (no args) - View current target with progress bar
+- [x] Daily progress bar - Visual emoji progress bar with color coding
+  - 🟩 Green (0-79%): Safe zone
+  - 🟨 Yellow (80-89%): Warning zone
+  - 🟧 Orange (90-99%): Approaching limit
+  - 🟥 Red (100%+): Over limit with ⚠️ indicator
+- [x] Calorie warnings after food logging
+  - 80%: "Sudah X% dari target. Sisa Y kkal."
+  - 90%: "Hampir mencapai target! Sisa Y kkal lagi."
+  - 100%+: "Kamu sudah melebihi target sebanyak Y kkal!"
+- [x] Progress section in `/today` command
+- [x] "User Settings" worksheet for storing user targets
+
+**User Settings Schema:**
+| Column | Description |
+|--------|-------------|
+| User ID | Telegram user ID (primary key) |
+| Kalori Target | Daily calorie target (kkal) |
+| Created At | Timestamp |
+| Updated At | Timestamp |
+
+---
+
 ## 🔜 Planned Features
 
-### Phase 5: Goal Tracking 🎯
-*Priority: Medium*
+### Phase 5.5: Weekly Summary 📊
+*Priority: Low - Deferred from Phase 5*
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| `/target <kkal>` | 🔴 High | Set daily calorie target |
-| Daily Progress Bar | 🟡 Medium | Visual progress towards goal |
-| Calorie Warning | 🟡 Medium | Alert when approaching limit |
-| Weekly Summary | 🟢 Low | Automated weekly report |
+| Weekly Summary | 🟢 Low | Automated weekly report (requires APScheduler) |
 
 ---
 
