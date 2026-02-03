@@ -99,6 +99,12 @@ def format_nutrition_response(data: dict) -> str:
         else:
             lines.append(f"📏 Porsi: {food.get('portion', '-')}")
 
+        # Show reference source if available
+        if food.get('reference_source'):
+            lines.append(f"📚 Sumber: {food.get('reference_source')}")
+        if food.get('reference_url') and food.get('reference_url') != '-':
+            lines.append(f"🔗 {food.get('reference_url')}")
+
     # Add total section if multiple foods
     if len(foods) > 1:
         lines.append("\n━━━━━━━━━━━━━━━━━━")
@@ -167,6 +173,25 @@ def get_warning_message(status: str, percentage: float, remaining: int) -> str:
     return ""
 
 
+def format_daily_progress_summary(progress: dict) -> str:
+    """Format compact daily progress for display after food entry."""
+    lines = ["\n━━━━━━━━━━━━━━━━━━", "📊 Progress Hari Ini:"]
+
+    if progress.get("target"):
+        lines.append(f"🔥 Total: {progress['current']} / {progress['target']} kkal")
+        lines.append(format_progress_bar(progress['percentage']))
+
+        if progress['status'] == 'over':
+            lines.append(f"⚠️ Melebihi target {abs(progress['remaining'])} kkal!")
+        else:
+            lines.append(f"Sisa: {progress['remaining']} kkal")
+    else:
+        lines.append(f"🔥 Total: {progress['current']} kkal")
+        lines.append("💡 Tip: Gunakan /target untuk mengatur target kalori harian.")
+
+    return "\n".join(lines)
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
     await update.message.reply_text(WELCOME_MESSAGE)
@@ -225,16 +250,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if logged:
             response += "\n\n✅ Tersimpan ke log"
 
-            # Add calorie warning if target is set
+            # Always show daily progress after logging
             progress = get_daily_progress(user_id)
-            if progress["target"] is not None and progress["status"] != "safe":
-                warning = get_warning_message(
-                    progress["status"],
-                    progress["percentage"],
-                    progress["remaining"]
-                )
-                if warning:
-                    response += warning
+            response += format_daily_progress_summary(progress)
 
         await update.message.reply_text(response)
 
@@ -283,16 +301,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if logged:
             response += "\n\n✅ Tersimpan ke log"
 
-            # Add calorie warning if target is set
+            # Always show daily progress after logging
             progress = get_daily_progress(user_id)
-            if progress["target"] is not None and progress["status"] != "safe":
-                warning = get_warning_message(
-                    progress["status"],
-                    progress["percentage"],
-                    progress["remaining"]
-                )
-                if warning:
-                    response += warning
+            response += format_daily_progress_summary(progress)
 
         await update.message.reply_text(response)
 

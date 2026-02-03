@@ -17,7 +17,9 @@ Berikan response dalam format JSON ONLY (tanpa markdown):
       "protein": angka dalam gram,
       "carbs": angka dalam gram,
       "fat": angka dalam gram,
-      "portion": "deskripsi porsi, misal: 150 gram, 1 potong"
+      "portion": "deskripsi porsi, misal: 150 gram, 1 potong",
+      "reference_source": "nama database referensi",
+      "reference_url": "URL ke sumber data"
     },
     {
       "name": "nama makanan 2",
@@ -25,7 +27,9 @@ Berikan response dalam format JSON ONLY (tanpa markdown):
       "protein": angka dalam gram,
       "carbs": angka dalam gram,
       "fat": angka dalam gram,
-      "portion": "deskripsi porsi"
+      "portion": "deskripsi porsi",
+      "reference_source": "nama database referensi",
+      "reference_url": "URL ke sumber data"
     }
   ],
   "total": {
@@ -35,6 +39,15 @@ Berikan response dalam format JSON ONLY (tanpa markdown):
     "fat": total semua gram
   }
 }
+
+Sertakan sumber referensi nutrisi yang digunakan:
+- reference_source: nama database (contoh: "TKPI Indonesia", "USDA FoodData", "FatSecret Indonesia")
+- reference_url: URL valid ke sumber data
+
+Prioritas sumber referensi:
+1. TKPI (Tabel Komposisi Pangan Indonesia) - https://www.panganku.org/id-ID/view
+2. USDA FoodData Central - https://fdc.nal.usda.gov
+3. FatSecret Indonesia - https://www.fatsecret.co.id
 
 Jika hanya ada 1 makanan, tetap gunakan format array dengan 1 item.
 Jika bukan makanan/minuman, return:
@@ -53,7 +66,9 @@ Berikan response dalam format JSON ONLY (tanpa markdown):
       "protein": angka dalam gram,
       "carbs": angka dalam gram,
       "fat": angka dalam gram,
-      "weight_grams": {weight}
+      "weight_grams": {weight},
+      "reference_source": "nama database referensi",
+      "reference_url": "URL ke sumber data"
     }}
   ],
   "total": {{
@@ -64,6 +79,15 @@ Berikan response dalam format JSON ONLY (tanpa markdown):
     "weight_grams": {weight}
   }}
 }}
+
+Sertakan sumber referensi nutrisi yang digunakan:
+- reference_source: nama database (contoh: "TKPI Indonesia", "USDA FoodData", "FatSecret Indonesia")
+- reference_url: URL valid ke sumber data
+
+Prioritas sumber referensi:
+1. TKPI (Tabel Komposisi Pangan Indonesia) - https://www.panganku.org/id-ID/view
+2. USDA FoodData Central - https://fdc.nal.usda.gov
+3. FatSecret Indonesia - https://www.fatsecret.co.id
 
 Jika bukan makanan/minuman, return:
 {{"error": "Tidak dapat mengenali makanan"}}"""

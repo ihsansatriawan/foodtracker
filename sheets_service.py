@@ -18,16 +18,18 @@ SCOPES = [
 
 # Sheet header row
 HEADERS = [
-    "Tanggal",      # Date (YYYY-MM-DD)
-    "Waktu",        # Time (HH:MM)
-    "User ID",      # Telegram user ID
-    "Nama Makanan", # Food name
-    "Kalori",       # Calories (kkal)
-    "Protein",      # Protein (gram)
-    "Karbo",        # Carbs (gram)
-    "Lemak",        # Fat (gram)
-    "Porsi/Berat",  # Portion or weight
-    "Image URL"     # Telegram file URL for validation
+    "Tanggal",          # Date (YYYY-MM-DD)
+    "Waktu",            # Time (HH:MM)
+    "User ID",          # Telegram user ID
+    "Nama Makanan",     # Food name
+    "Kalori",           # Calories (kkal)
+    "Protein",          # Protein (gram)
+    "Karbo",            # Carbs (gram)
+    "Lemak",            # Fat (gram)
+    "Porsi/Berat",      # Portion or weight
+    "Sumber Referensi", # Reference source name
+    "URL Referensi",    # Reference source URL
+    "Image URL"         # Telegram file URL for validation
 ]
 
 # User Settings sheet headers
@@ -137,6 +139,8 @@ def log_food_entry(user_id: int, food_data: dict, image_url: str = "") -> bool:
         food_data.get('carbs', 0),
         food_data.get('fat', 0),
         portion,
+        food_data.get('reference_source', '-'),
+        food_data.get('reference_url', '-'),
         image_url
     ]
 
