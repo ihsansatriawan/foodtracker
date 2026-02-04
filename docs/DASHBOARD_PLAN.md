@@ -2,14 +2,14 @@
 
 ## Overview
 
-Simple web dashboard untuk melihat data food log dari Google Sheets dalam format tabel dengan gambar makanan yang jelas terlihat, sehingga user bisa memvalidasi dan update data secara manual.
+Simple web dashboard untuk melihat data food log dari Google Sheets dalam format tabel dengan gambar makanan yang jelas terlihat, sehingga user bisa memvalidasi dan update data secara manual. **Responsive design** untuk desktop dan mobile.
 
 ---
 
 ## Tech Stack
 
 - **Backend:** FastAPI (Python)
-- **Frontend:** HTML + Tailwind CSS (CDN)
+- **Frontend:** HTML + Tailwind CSS (CDN) - responsive utilities
 - **Data:** gspread (reuse existing)
 
 ---
@@ -117,6 +117,109 @@ Legend:
 
 ---
 
+## Mobile View (Card Layout)
+
+Pada layar kecil (< 768px), tampilan berubah menjadi **card-based layout** untuk kemudahan scrolling dan editing.
+
+```
+┌─────────────────────────────┐
+│  Food Tracker          [☰]  │
+├─────────────────────────────┤
+│                             │
+│  ┌───────────────────────┐  │
+│  │ ┌───────────────────┐ │  │
+│  │ │                   │ │  │
+│  │ │                   │ │  │
+│  │ │   [Foto Nasi      │ │  │
+│  │ │    Goreng -       │ │  │
+│  │ │    Large View]    │ │  │
+│  │ │                   │ │  │
+│  │ │                   │ │  │
+│  │ └───────────────────┘ │  │
+│  │                       │  │
+│  │  2024-02-01 • 14:30   │  │
+│  │                       │  │
+│  │  ┌─────────────────┐  │  │
+│  │  │ Nasi Goreng     │  │  │ ← tap to edit
+│  │  └─────────────────┘  │  │
+│  │                       │  │
+│  │  ┌──────┬──────┬────┐ │  │
+│  │  │ 450  │  12g │ 65g│ │  │ ← tap each to edit
+│  │  │ kkal │  P   │  K │ │  │
+│  │  ├──────┼──────┼────┤ │  │
+│  │  │ 18g  │ 250g │    │ │  │
+│  │  │  L   │Porsi │    │ │  │
+│  │  └──────┴──────┴────┘ │  │
+│  │                       │  │
+│  │           [🗑 Delete] │  │
+│  └───────────────────────┘  │
+│                             │
+│  ┌───────────────────────┐  │
+│  │ ┌───────────────────┐ │  │
+│  │ │   [Foto Ayam      │ │  │
+│  │ │    Bakar]         │ │  │
+│  │ └───────────────────┘ │  │
+│  │                       │  │
+│  │  2024-02-01 • 12:15   │  │
+│  │  Ayam Bakar           │  │
+│  │  320 kkal • 35g P     │  │
+│  │  ...                  │  │
+│  └───────────────────────┘  │
+│                             │
+│  ┌───────────────────────┐  │
+│  │      [No Image]       │  │
+│  │                       │  │
+│  │  2024-02-01 • 10:00   │  │
+│  │  Teh Manis            │  │
+│  │  80 kkal • 0g P       │  │
+│  │  ...                  │  │
+│  └───────────────────────┘  │
+│                             │
+│      [Load More...]         │
+│                             │
+└─────────────────────────────┘
+```
+
+### Mobile Inline Edit (Tap Cell)
+
+```
+┌─────────────────────────────┐
+│  ┌───────────────────────┐  │
+│  │                       │  │
+│  │  ┌─────────────────┐  │  │
+│  │  │ Nasi Goreng Spe │  │  │ ← active input
+│  │  └─────────────────┘  │  │
+│  │  [Cancel]    [Save]   │  │
+│  │                       │  │
+│  └───────────────────────┘  │
+└─────────────────────────────┘
+```
+
+### Mobile Edit Nutrition (Tap Grid)
+
+```
+┌─────────────────────────────┐
+│  │  ┌──────┬──────┬────┐ │  │
+│  │  │┌────┐│  12g │ 65g│ │  │
+│  │  ││ 500││  P   │  K │ │  │ ← editing Kalori
+│  │  │└────┘│      │    │ │  │
+│  │  │[✓][✗]│      │    │ │  │
+│  │  └──────┴──────┴────┘ │  │
+└─────────────────────────────┘
+```
+
+---
+
+## Responsive Breakpoints
+
+| Screen | Layout | Image Size |
+|--------|--------|------------|
+| Desktop (≥1024px) | Table view | 150x150px |
+| Tablet (768-1023px) | Table view (scrollable) | 120x120px |
+| Mobile (<768px) | Card view (stacked) | Full width (~300px) |
+
+---
+
 ## User Flow
 
 1. **Buka dashboard** → Lihat semua data dalam tabel dengan gambar besar
@@ -156,11 +259,13 @@ foodtracker/
 ## Implementation Steps
 
 1. [ ] Setup FastAPI dengan single HTML template
-2. [ ] Buat tabel dengan data dari Sheets
+2. [ ] Buat tabel dengan data dari Sheets (desktop view)
 3. [ ] Tampilkan gambar dalam ukuran besar (~150px)
 4. [ ] Implementasi inline edit untuk: Nama, Kalori, Protein, Karbo, Lemak, Porsi
 5. [ ] Tambah delete dengan konfirmasi
-6. [ ] Pagination
+6. [ ] Pagination / Load more
+7. [ ] Mobile responsive: card layout untuk layar < 768px
+8. [ ] Touch-friendly edit buttons untuk mobile
 
 ---
 
