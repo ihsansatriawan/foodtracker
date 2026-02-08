@@ -68,6 +68,63 @@ Berikan response dalam format JSON ONLY (tanpa markdown):
 Jika bukan makanan/minuman, return:
 {{"error": "Tidak dapat mengenali makanan"}}"""
 
+PROMPT_WITH_FOOD_HINT = """Kamu adalah ahli nutrisi Indonesia. Analisis SEMUA makanan yang ada dalam gambar.
+PENTING: User menyebutkan bahwa makanan ini adalah "{food_name}".
+Gunakan informasi ini sebagai petunjuk utama untuk mengidentifikasi makanan, tetapi jika kamu melihat makanan lain di gambar yang tidak disebutkan user, tetap analisis juga.
+
+Berikan response dalam format JSON ONLY (tanpa markdown):
+{{
+  "foods": [
+    {{
+      "name": "nama makanan dalam Bahasa Indonesia",
+      "calories": angka dalam kkal,
+      "protein": angka dalam gram,
+      "carbs": angka dalam gram,
+      "fat": angka dalam gram,
+      "portion": "deskripsi porsi, misal: 150 gram, 1 potong"
+    }}
+  ],
+  "total": {{
+    "calories": total semua kkal,
+    "protein": total semua gram,
+    "carbs": total semua gram,
+    "fat": total semua gram
+  }}
+}}
+
+Jika hanya ada 1 makanan, tetap gunakan format array dengan 1 item.
+Jika bukan makanan/minuman, return:
+{{"error": "Tidak dapat mengenali makanan"}}"""
+
+PROMPT_WITH_WEIGHT_AND_FOOD_HINT = """Kamu adalah ahli nutrisi Indonesia. Analisis makanan dalam gambar.
+PENTING: User menyebutkan bahwa makanan ini adalah "{food_name}" dengan berat {weight} gram.
+Gunakan informasi ini sebagai petunjuk utama untuk mengidentifikasi makanan.
+Hitung kandungan nutrisi berdasarkan berat {weight} gram tersebut.
+
+Berikan response dalam format JSON ONLY (tanpa markdown):
+{{
+  "foods": [
+    {{
+      "name": "nama makanan dalam Bahasa Indonesia",
+      "calories": angka dalam kkal untuk {weight} gram,
+      "protein": angka dalam gram,
+      "carbs": angka dalam gram,
+      "fat": angka dalam gram,
+      "weight_grams": {weight}
+    }}
+  ],
+  "total": {{
+    "calories": total kkal,
+    "protein": total gram,
+    "carbs": total gram,
+    "fat": total gram,
+    "weight_grams": {weight}
+  }}
+}}
+
+Jika bukan makanan/minuman, return:
+{{"error": "Tidak dapat mengenali makanan"}}"""
+
 
 def parse_weight_from_text(text: str) -> tuple[str, int | None]:
     """
@@ -139,22 +196,27 @@ def normalize_response(data: dict) -> dict:
     return {"error": "Format respons tidak valid"}
 
 
-async def analyze_food_image(image_bytes: bytes, weight_grams: int | None = None) -> dict:
+async def analyze_food_image(image_bytes: bytes, weight_grams: int | None = None, food_name: str | None = None) -> dict:
     """
     Analyze food from image using Gemini Vision.
 
     Args:
         image_bytes: Raw image data
         weight_grams: Optional weight in grams for precise calculation
+        food_name: Optional food name hint from user caption
 
     Returns: {foods: [...], total: {...}} or {error: "..."}
     """
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
 
-        # Use weight-specific prompt if weight is provided
-        if weight_grams:
+        # Select prompt based on available hints
+        if weight_grams and food_name:
+            prompt = PROMPT_WITH_WEIGHT_AND_FOOD_HINT.format(weight=weight_grams, food_name=food_name)
+        elif weight_grams:
             prompt = PROMPT_WITH_WEIGHT.format(weight=weight_grams)
+        elif food_name:
+            prompt = PROMPT_WITH_FOOD_HINT.format(food_name=food_name)
         else:
             prompt = PROMPT_TEMPLATE
 

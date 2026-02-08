@@ -183,11 +183,16 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Get caption if exists (may contain weight)
     caption = update.message.caption or ""
 
-    # Parse weight from caption
-    _, weight_grams = parse_weight_from_text(caption)
+    # Parse weight and food name from caption
+    food_name_hint, weight_grams = parse_weight_from_text(caption)
+    food_name_hint = food_name_hint.strip() or None
 
-    if weight_grams:
+    if weight_grams and food_name_hint:
+        await update.message.reply_text(f"🔄 Menganalisis foto {food_name_hint} ({weight_grams} gram)...")
+    elif weight_grams:
         await update.message.reply_text(f"🔄 Menganalisis foto makanan ({weight_grams} gram)...")
+    elif food_name_hint:
+        await update.message.reply_text(f"🔄 Menganalisis foto {food_name_hint}...")
     else:
         await update.message.reply_text("🔄 Menganalisis foto makanan...")
 
@@ -201,7 +206,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         photo_bytes_raw = bytes(photo_bytes)
 
         # Pass weight to analyzer
-        result = await analyze_food_image(photo_bytes_raw, weight_grams=weight_grams)
+        result = await analyze_food_image(photo_bytes_raw, weight_grams=weight_grams, food_name=food_name_hint)
 
         # Send response
         response = format_nutrition_response(result)

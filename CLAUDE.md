@@ -33,7 +33,7 @@ Five-file modular design:
   - `/undo` - Delete the most recent food entry
   - `/target <kkal>` - Set daily calorie target (500-10000 kkal range)
   - `/target <date>` - View progress for a specific date (supports DD/MM/YYYY, YYYY-MM-DD)
-  - Photo handler with caption weight support
+  - Photo handler with caption weight and food name hint support
   - Text handler with inline weight parsing
   - Calorie warning system - alerts at 80%, 90%, and 100%+ of target
   - Slash command menu via `set_my_commands()` - commands appear when user types "/"
@@ -46,10 +46,10 @@ Five-file modular design:
   - `IMAGEKIT_*` - ImageKit credentials for image storage
 
 - **gemini_service.py** - Gemini AI integration:
-  - `analyze_food_image(image_bytes, weight_grams=None)` - Vision-based food analysis
+  - `analyze_food_image(image_bytes, weight_grams=None, food_name=None)` - Vision-based food analysis with optional food name hint from caption
   - `analyze_food_text(food_description, weight_grams=None)` - Text-based food analysis
   - `parse_weight_from_text(text)` - Extracts weight in grams from user input (supports "250g", "0.5 kg", etc.)
-  - Uses `PROMPT_TEMPLATE` for estimation mode and `PROMPT_WITH_WEIGHT` for precise weight-based calculations
+  - Uses `PROMPT_TEMPLATE` for estimation, `PROMPT_WITH_WEIGHT` for weight-based, `PROMPT_WITH_FOOD_HINT` for caption food name, and `PROMPT_WITH_WEIGHT_AND_FOOD_HINT` for both
 
 - **sheets_service.py** - Google Sheets integration for data persistence:
   - `log_food_entry()` / `log_multiple_foods()` - Save food entries with timestamp
@@ -66,7 +66,7 @@ Five-file modular design:
   - `is_imagekit_configured()` - Check if ImageKit is set up
   - Generates permanent URLs stored in Google Sheets for manual validation
 
-**Data Flow:** User sends photo/text → Bot downloads/captures → Weight parsed from caption/message → Gemini API analyzes with appropriate prompt → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned → Calorie warning shown if target exceeded
+**Data Flow:** User sends photo/text → Bot downloads/captures → Weight and food name parsed from caption/message → Gemini API analyzes with appropriate prompt (food name hint forwarded for photos) → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned → Calorie warning shown if target exceeded
 
 **Response Format:** All Gemini responses are normalized to `{foods: [...], total: {...}}` structure for consistent handling of single and multi-food detection.
 
