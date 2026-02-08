@@ -235,9 +235,16 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if logged:
             response += "\n\n✅ Tersimpan ke log"
 
-            # Add calorie warning if target is set
+            # Add progress target section if target is set
             progress = get_daily_progress(user_id)
-            if progress["target"] is not None and progress["status"] != "safe":
+            if progress["target"] is not None:
+                bar = format_progress_bar(progress["percentage"])
+                response += "\n\n━━━━━━━━━━━━━━━━━━"
+                response += "\n🎯 Progress Target:"
+                response += f"\nTarget: {progress['target']} kkal"
+                response += f"\nSisa: {max(0, progress['remaining'])} kkal"
+                response += f"\n\n{bar}"
+
                 warning = get_warning_message(
                     progress["status"],
                     progress["percentage"],
@@ -300,9 +307,16 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if logged:
             response += "\n\n✅ Tersimpan ke log"
 
-            # Add calorie warning if target is set
+            # Add progress target section if target is set
             progress = get_daily_progress(user_id)
-            if progress["target"] is not None and progress["status"] != "safe":
+            if progress["target"] is not None:
+                bar = format_progress_bar(progress["percentage"])
+                response += "\n\n━━━━━━━━━━━━━━━━━━"
+                response += "\n🎯 Progress Target:"
+                response += f"\nTarget: {progress['target']} kkal"
+                response += f"\nSisa: {max(0, progress['remaining'])} kkal"
+                response += f"\n\n{bar}"
+
                 warning = get_warning_message(
                     progress["status"],
                     progress["percentage"],
