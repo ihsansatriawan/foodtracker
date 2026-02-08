@@ -21,7 +21,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | **Goal Tracking** | ✅ Done | `/target` command to set daily calorie goals |
 | **Progress Bar** | ✅ Done | Visual emoji progress bar with color-coded status |
 | **Calorie Warnings** | ✅ Done | Alerts when approaching or exceeding target |
-| **Progress Updates** | ✅ Done | Real-time status messages during photo/text processing |
+| **Progress Updates** | ✅ Done | Step-by-step status messages during photo/text processing |
 
 ### Supported Input Formats
 
@@ -178,7 +178,7 @@ food_tracker/
 │                         bot.py                                  │
 │  • /start, /help, /today, /history, /undo, /target commands     │
 │  • Photo & text message handlers                                │
-│  • Progressive status updates via message editing               │
+│  • Step-by-step progress messages during processing             │
 │  • Weight & food name parsing from caption/text                  │
 │  • Goal tracking with progress bar & calorie warnings           │
 └───────────┬─────────────────────┬─────────────────────┬─────────┘

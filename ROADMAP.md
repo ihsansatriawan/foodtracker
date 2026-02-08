@@ -94,11 +94,11 @@ Development roadmap for the Food Tracker Telegram bot.
 ---
 
 ### Phase 5.5: Progressive Status Updates ✅
-- [x] Single status message edited progressively via `edit_text()`
-- [x] Photo flow: 📸 Foto diterima → 🔍 Menganalisis nutrisi → 💾 Menyimpan ke catatan → ✅ Selesai
-- [x] Text flow: ✍️ Menerima pesanan → 💾 Menyimpan ke catatan → ✅ Selesai
+- [x] Separate progress messages at each processing stage
+- [x] Photo flow: 📸 Foto diterima → 🔍 Menganalisis nutrisi → 💾 Menyimpan ke catatan → ✅ Selesai → Hasil
+- [x] Text flow: ✍️ Menerima pesanan → 💾 Menyimpan ke catatan → ✅ Selesai → Hasil
 - [x] Context-aware messages (includes food name and weight from caption/text)
-- [x] Inline error handling - status message updates to ❌ on failure
+- [x] Error handling with friendly ❌ message on failure
 - [x] Sheets-aware - skip saving step when Google Sheets not configured
 
 ---
