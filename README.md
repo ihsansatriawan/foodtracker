@@ -8,7 +8,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| **Photo Analysis** | ✅ Done | Send a food photo and get instant nutritional breakdown |
+| **Photo Analysis** | ✅ Done | Send a food photo and get instant nutritional breakdown (supports food name hint in caption) |
 | **Text Analysis** | ✅ Done | Describe your food (e.g., "nasi goreng 1 piring") to get estimates |
 | **Weight-Based Calculation** | ✅ Done | Specify food weight in grams for precise nutrition estimates |
 | **Multi-Food Detection** | ✅ Done | Automatically detects and analyzes multiple food items in a single image |
@@ -21,6 +21,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | **Goal Tracking** | ✅ Done | `/target` command to set daily calorie goals |
 | **Progress Bar** | ✅ Done | Visual emoji progress bar with color-coded status |
 | **Calorie Warnings** | ✅ Done | Alerts when approaching or exceeding target |
+| **Progress Updates** | ✅ Done | Step-by-step status messages during photo/text processing |
 
 ### Supported Input Formats
 
@@ -28,6 +29,10 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 - Send food photo without caption → AI estimates portion and nutrition
 - Send food photo with weight caption → Precise nutrition calculation
   - Example: `250 gram`, `250g`, `0.5 kg`
+- Send food photo with food name caption → AI uses name as hint for identification
+  - Example: `nasi goreng`, `ayam bakar`
+- Send food photo with food name + weight → Both name hint and precise calculation
+  - Example: `nasi goreng 250g`, `ayam bakar 150 gram`
 
 **Text Input:**
 - With weight: `"nasi goreng 200 gram"`, `"ayam bakar 150g"`
@@ -129,14 +134,20 @@ python bot.py
    - Bot calculates nutrition based on the specified weight
    - Displays: `⚖️ Berat: 250 gram`
 
-2. **Photo Analysis (estimation):**
+2. **Photo Analysis (with food name):**
+   - Send a food photo with caption `nasi goreng` or `nasi goreng 250g`
+   - Bot uses the food name as a hint for more accurate identification
+   - Progress: `📸 Foto nasi goreng (250 gram) diterima!` → `🔍 Menganalisis...` → `💾 Menyimpan...` → `✅ Selesai!`
+
+3. **Photo Analysis (estimation):**
    - Send a food photo without caption
    - Bot estimates portion size and nutrition
    - Displays: `📏 Porsi: ~1 piring`
 
-3. **Text Analysis:**
+4. **Text Analysis:**
    - With weight: `"nasi goreng 200 gram"` or `"ayam bakar 150g"`
    - Without weight: `"nasi goreng 1 piring"` or `"ayam bakar setengah ekor"`
+   - Progress: `✍️ Menerima pesanan "nasi goreng"!` → `💾 Menyimpan...` → `✅ Selesai!`
 
 ## Project Structure
 
@@ -167,7 +178,8 @@ food_tracker/
 │                         bot.py                                  │
 │  • /start, /help, /today, /history, /undo, /target commands     │
 │  • Photo & text message handlers                                │
-│  • Weight parsing from caption/text                             │
+│  • Step-by-step progress messages during processing             │
+│  • Weight & food name parsing from caption/text                  │
 │  • Goal tracking with progress bar & calorie warnings           │
 └───────────┬─────────────────────┬─────────────────────┬─────────┘
             │                     │                     │
@@ -206,7 +218,7 @@ python bot.py
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the full development roadmap including:
-- ✅ Completed: MVP features, Data persistence, Goal tracking
+- ✅ Completed: MVP features, Data persistence, Goal tracking, Progressive status updates
 - 🔜 Planned: Enhanced analysis, User experience improvements
 - 🔧 Technical improvements
 
