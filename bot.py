@@ -187,14 +187,13 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     food_name_hint, weight_grams = parse_weight_from_text(caption)
     food_name_hint = food_name_hint.strip() or None
 
-    if weight_grams and food_name_hint:
-        await update.message.reply_text(f"🔄 Menganalisis foto {food_name_hint} ({weight_grams} gram)...")
-    elif weight_grams:
-        await update.message.reply_text(f"🔄 Menganalisis foto makanan ({weight_grams} gram)...")
-    elif food_name_hint:
-        await update.message.reply_text(f"🔄 Menganalisis foto {food_name_hint}...")
+    # Step 1: Foto diterima, mengunduh gambar
+    food_label = food_name_hint or "makanan"
+    if weight_grams:
+        status_text = f"📸 Foto {food_label} ({weight_grams} gram) diterima! Mengunduh gambar..."
     else:
-        await update.message.reply_text("🔄 Menganalisis foto makanan...")
+        status_text = f"📸 Foto {food_label} diterima! Mengunduh gambar..."
+    status_msg = await update.message.reply_text(status_text)
 
     try:
         # Get the largest photo
@@ -205,6 +204,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         photo_bytes = await file.download_as_bytearray()
         photo_bytes_raw = bytes(photo_bytes)
 
+        # Step 2: Menganalisis nutrisi
+        await status_msg.edit_text("🔍 Foto berhasil diunduh! Sedang menganalisis nutrisi makanan...")
+
         # Pass weight to analyzer
         result = await analyze_food_image(photo_bytes_raw, weight_grams=weight_grams, food_name=food_name_hint)
 
@@ -214,6 +216,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Log to Google Sheets if configured and successful
         logged = False
         if "error" not in result and is_sheets_configured():
+            # Step 3: Menyimpan ke catatan
+            await status_msg.edit_text("💾 Analisis selesai! Menyimpan ke catatan...")
+
             user_id = update.effective_user.id
             foods = result.get("foods", [])
             if foods:
@@ -241,11 +246,13 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 if warning:
                     response += warning
 
+        # Step 4: Final status
+        await status_msg.edit_text("✅ Selesai!")
         await update.message.reply_text(response)
 
     except Exception as e:
         logger.error(f"Error handling photo: {e}")
-        await update.message.reply_text("❌ Maaf, terjadi kesalahan. Coba lagi nanti.")
+        await status_msg.edit_text("❌ Maaf, terjadi kesalahan saat memproses foto. Coba kirim ulang ya!")
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -263,10 +270,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not food_description.strip():
         food_description = text
 
+    # Step 1: Menerima pesanan
     if weight_grams:
-        await update.message.reply_text(f"🔄 Menganalisis makanan ({weight_grams} gram)...")
+        status_text = f'✍️ Menerima pesanan "{food_description}" ({weight_grams} gram)! Sedang menganalisis nutrisi...'
     else:
-        await update.message.reply_text("🔄 Menganalisis makanan...")
+        status_text = f'✍️ Menerima pesanan "{text}"! Sedang menganalisis nutrisi...'
+    status_msg = await update.message.reply_text(status_text)
 
     try:
         # Pass weight to analyzer
@@ -278,6 +287,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         # Log to Google Sheets if configured and successful
         logged = False
         if "error" not in result and is_sheets_configured():
+            # Step 2: Menyimpan ke catatan
+            await status_msg.edit_text("💾 Analisis selesai! Menyimpan ke catatan...")
+
             user_id = update.effective_user.id
             foods = result.get("foods", [])
             if foods:
@@ -299,11 +311,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 if warning:
                     response += warning
 
+        # Step 3: Final status
+        await status_msg.edit_text("✅ Selesai!")
         await update.message.reply_text(response)
 
     except Exception as e:
         logger.error(f"Error handling text: {e}")
-        await update.message.reply_text("❌ Maaf, terjadi kesalahan. Coba lagi nanti.")
+        await status_msg.edit_text("❌ Maaf, terjadi kesalahan saat menganalisis. Coba kirim ulang ya!")
 
 
 async def today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

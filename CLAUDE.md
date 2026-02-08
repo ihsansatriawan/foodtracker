@@ -35,6 +35,7 @@ Five-file modular design:
   - `/target <date>` - View progress for a specific date (supports DD/MM/YYYY, YYYY-MM-DD)
   - Photo handler with caption weight and food name hint support
   - Text handler with inline weight parsing
+  - Progressive status updates via `edit_text()` — single message edited through processing stages (📸→🔍→💾→✅ for photos, ✍️→💾→✅ for text)
   - Calorie warning system - alerts at 80%, 90%, and 100%+ of target
   - Slash command menu via `set_my_commands()` - commands appear when user types "/"
 
@@ -66,7 +67,7 @@ Five-file modular design:
   - `is_imagekit_configured()` - Check if ImageKit is set up
   - Generates permanent URLs stored in Google Sheets for manual validation
 
-**Data Flow:** User sends photo/text → Bot downloads/captures → Weight and food name parsed from caption/message → Gemini API analyzes with appropriate prompt (food name hint forwarded for photos) → JSON response normalized → Food logged to Google Sheets (with image URL if photo) → Emoji-rich nutrition breakdown returned → Calorie warning shown if target exceeded
+**Data Flow:** User sends photo/text → Status message sent → Bot downloads/captures (status updated) → Weight and food name parsed from caption/message → Gemini API analyzes with appropriate prompt (status updated) → JSON response normalized → Food logged to Google Sheets (status updated) → Status finalized "✅ Selesai!" → Emoji-rich nutrition breakdown returned as new message → Calorie warning shown if target exceeded
 
 **Response Format:** All Gemini responses are normalized to `{foods: [...], total: {...}}` structure for consistent handling of single and multi-food detection.
 

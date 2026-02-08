@@ -21,6 +21,7 @@ A Telegram bot that analyzes food photos and text descriptions to provide nutrit
 | **Goal Tracking** | ✅ Done | `/target` command to set daily calorie goals |
 | **Progress Bar** | ✅ Done | Visual emoji progress bar with color-coded status |
 | **Calorie Warnings** | ✅ Done | Alerts when approaching or exceeding target |
+| **Progress Updates** | ✅ Done | Real-time status messages during photo/text processing |
 
 ### Supported Input Formats
 
@@ -136,7 +137,7 @@ python bot.py
 2. **Photo Analysis (with food name):**
    - Send a food photo with caption `nasi goreng` or `nasi goreng 250g`
    - Bot uses the food name as a hint for more accurate identification
-   - Status: `Menganalisis foto nasi goreng (250 gram)...`
+   - Progress: `📸 Foto nasi goreng (250 gram) diterima!` → `🔍 Menganalisis...` → `💾 Menyimpan...` → `✅ Selesai!`
 
 3. **Photo Analysis (estimation):**
    - Send a food photo without caption
@@ -146,6 +147,7 @@ python bot.py
 4. **Text Analysis:**
    - With weight: `"nasi goreng 200 gram"` or `"ayam bakar 150g"`
    - Without weight: `"nasi goreng 1 piring"` or `"ayam bakar setengah ekor"`
+   - Progress: `✍️ Menerima pesanan "nasi goreng"!` → `💾 Menyimpan...` → `✅ Selesai!`
 
 ## Project Structure
 
@@ -176,6 +178,7 @@ food_tracker/
 │                         bot.py                                  │
 │  • /start, /help, /today, /history, /undo, /target commands     │
 │  • Photo & text message handlers                                │
+│  • Progressive status updates via message editing               │
 │  • Weight & food name parsing from caption/text                  │
 │  • Goal tracking with progress bar & calorie warnings           │
 └───────────┬─────────────────────┬─────────────────────┬─────────┘
@@ -215,7 +218,7 @@ python bot.py
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the full development roadmap including:
-- ✅ Completed: MVP features, Data persistence, Goal tracking
+- ✅ Completed: MVP features, Data persistence, Goal tracking, Progressive status updates
 - 🔜 Planned: Enhanced analysis, User experience improvements
 - 🔧 Technical improvements
 
